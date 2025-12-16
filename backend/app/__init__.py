@@ -1,0 +1,2 @@
+"""TalaTrivia Backend Application."""
+
