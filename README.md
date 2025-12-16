@@ -76,7 +76,16 @@ alembic upgrade head
 
 ### Endpoints
 
+#### Health
 - `GET /health` - Health check endpoint
+
+#### Lobby
+- `POST /trivias/{trivia_id}/join` - Join a trivia
+  - Body: `{ "user_id": "uuid" }`
+- `POST /trivias/{trivia_id}/ready` - Set participant as ready
+  - Body: `{ "user_id": "uuid" }`
+- `POST /trivias/{trivia_id}/start` - Start a trivia (admin only)
+  - Body: `{ "admin_user_id": "uuid" }`
 
 ### Arquitectura
 
@@ -99,6 +108,44 @@ Para aplicar migraciones:
 ```bash
 docker compose -f docker-compose-local.yml exec backend alembic upgrade head
 ```
+
+## Pruebas de Endpoints de Lobby
+
+Para probar los endpoints de lobby, primero necesitas crear datos de prueba en la base de datos:
+
+1. **Crear usuarios y trivia en la base de datos** (puedes usar DBeaver o psql):
+   ```sql
+   -- Crear usuarios
+   INSERT INTO users (id, name, email, password_hash, role, created_at)
+   VALUES 
+     ('11111111-1111-1111-1111-111111111111', 'Admin User', 'admin@test.com', 'hash', 'ADMIN', NOW()),
+     ('22222222-2222-2222-2222-222222222222', 'Player 1', 'player1@test.com', 'hash', 'PLAYER', NOW()),
+     ('33333333-3333-3333-3333-333333333333', 'Player 2', 'player2@test.com', 'hash', 'PLAYER', NOW());
+   
+   -- Crear trivia
+   INSERT INTO trivias (id, title, description, created_by_user_id, status, current_question_index, created_at)
+   VALUES 
+     ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Test Trivia', 'Test Description', 
+      '11111111-1111-1111-1111-111111111111', 'LOBBY', 0, NOW());
+   ```
+
+2. **Probar endpoints** (usando curl o Postman):
+   ```bash
+   # Join trivia
+   curl -X POST http://localhost:8000/trivias/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/join \
+     -H "Content-Type: application/json" \
+     -d '{"user_id": "22222222-2222-2222-2222-222222222222"}'
+   
+   # Set ready
+   curl -X POST http://localhost:8000/trivias/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/ready \
+     -H "Content-Type: application/json" \
+     -d '{"user_id": "22222222-2222-2222-2222-222222222222"}'
+   
+   # Start trivia (admin)
+   curl -X POST http://localhost:8000/trivias/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/start \
+     -H "Content-Type: application/json" \
+     -d '{"admin_user_id": "11111111-1111-1111-1111-111111111111"}'
+   ```
 
 ## Tareas de VSCode/Cursor
 
