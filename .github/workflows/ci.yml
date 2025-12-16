@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - development
+  pull_request:
+    branches:
+      - development
+      - master
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: backend
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run linter (ruff)
+        run: ruff check .
+      
+      - name: Run tests with coverage
+        run: pytest --cov=app --cov-report=term-missing
+      
+      - name: Coverage summary
+        run: |
+          echo "Coverage report generated above"
+
