@@ -1,0 +1,57 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Docker Compose: Up",
+            "type": "shell",
+            "command": "docker compose -f ../docker-compose-local.yml up --build",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "Docker Compose: Down",
+            "type": "shell",
+            "command": "docker compose -f ../docker-compose-local.yml down",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Alembic: Upgrade Head",
+            "type": "shell",
+            "command": "docker compose -f ../docker-compose-local.yml exec backend alembic upgrade head",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Alembic: Create Migration",
+            "type": "shell",
+            "command": "docker compose -f ../docker-compose-local.yml exec backend alembic revision --autogenerate -m \"${input:migrationMessage}\"",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        }
+    ],
+    "inputs": [
+        {
+            "id": "migrationMessage",
+            "type": "promptString",
+            "description": "Migration message"
+        }
+    ]
+}
+
