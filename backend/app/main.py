@@ -1,7 +1,7 @@
 """FastAPI application entry point."""
 from fastapi import FastAPI
 from app.core.logging import setup_logging
-from app.infrastructure.api.routers import health
+from app.infrastructure.api.routers import health, lobby
 
 # Setup logging
 logger = setup_logging()
@@ -15,6 +15,7 @@ app = FastAPI(
 
 # Register routers
 app.include_router(health.router)
+app.include_router(lobby.router)
 
 
 @app.on_event("startup")
