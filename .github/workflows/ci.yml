@@ -37,9 +37,11 @@ jobs:
         run: ruff check .
       
       - name: Run tests with coverage
-        run: pytest --cov=app --cov-report=term-missing
+        run: pytest --cov=app --cov-report=xml --cov-report=term-missing
       
-      - name: Coverage summary
-        run: |
-          echo "Coverage report generated above"
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./backend/coverage.xml
+          fail_ci_if_error: false
 
