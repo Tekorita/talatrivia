@@ -1,7 +1,6 @@
 """Tests for ScoreService."""
-import pytest
-from app.domain.services.score_service import ScoreService
 from app.domain.enums.difficulty import Difficulty
+from app.domain.services.score_service import ScoreService
 
 
 def test_points_for_easy():

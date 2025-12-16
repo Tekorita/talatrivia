@@ -1,6 +1,5 @@
 """Tests for JoinTriviaUseCase."""
 import pytest
-from datetime import datetime
 from uuid import UUID, uuid4
 from app.application.use_cases.join_trivia import JoinTriviaUseCase
 from app.domain.entities.trivia import Trivia, TriviaStatus

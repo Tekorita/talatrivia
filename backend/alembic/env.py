@@ -11,14 +11,14 @@ from app.core.config import settings
 from app.infrastructure.db.base import Base
 
 # Import all models so Alembic can detect them
-from app.infrastructure.db.models import (
-    UserModel,
-    TriviaModel,
-    QuestionModel,
-    OptionModel,
-    TriviaQuestionModel,
-    ParticipationModel,
+from app.infrastructure.db.models import (  # noqa: F401
     AnswerModel,
+    OptionModel,
+    ParticipationModel,
+    QuestionModel,
+    TriviaQuestionModel,
+    TriviaModel,
+    UserModel,
 )
 
 # this is the Alembic Config object, which provides
