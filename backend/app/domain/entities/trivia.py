@@ -1,5 +1,5 @@
 """Trivia domain entity."""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 from enum import Enum
@@ -38,7 +38,7 @@ class Trivia:
         self.status = status
         self.current_question_index = current_question_index
         self.question_started_at = question_started_at
-        self.created_at = created_at or datetime.utcnow()
+        self.created_at = created_at or datetime.now(timezone.utc)
         self.started_at = started_at
         self.finished_at = finished_at
 

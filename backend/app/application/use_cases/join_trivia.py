@@ -1,5 +1,5 @@
 """Join trivia use case."""
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 import uuid
 from app.application.dtos.join_trivia_dto import JoinTriviaDTO
@@ -77,7 +77,7 @@ class JoinTriviaUseCase:
             trivia_id=trivia_id,
             user_id=user_id,
             status=ParticipationStatus.JOINED,
-            joined_at=datetime.utcnow(),
+            joined_at=datetime.now(timezone.utc),
         )
         
         created_participation = await self.participation_repository.create(participation)

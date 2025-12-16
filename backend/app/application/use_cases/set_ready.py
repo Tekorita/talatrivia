@@ -1,5 +1,5 @@
 """Set ready use case."""
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 from app.application.dtos.set_ready_dto import SetReadyDTO
 from app.domain.entities.participation import ParticipationStatus
@@ -57,7 +57,7 @@ class SetReadyUseCase:
         
         # Update participation status
         participation.status = ParticipationStatus.READY
-        participation.ready_at = datetime.utcnow()
+        participation.ready_at = datetime.now(timezone.utc)
         
         await self.participation_repository.update(participation)
         

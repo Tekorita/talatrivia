@@ -1,5 +1,5 @@
 """Start trivia use case."""
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 from app.application.dtos.start_trivia_dto import StartTriviaDTO
 from app.domain.entities.participation import ParticipationStatus
@@ -70,7 +70,7 @@ class StartTriviaUseCase:
             )
         
         # Update trivia status
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         trivia.status = TriviaStatus.IN_PROGRESS
         trivia.started_at = now
         trivia.current_question_index = 0

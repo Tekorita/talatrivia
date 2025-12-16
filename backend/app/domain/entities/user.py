@@ -1,5 +1,5 @@
 """User domain entity."""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
@@ -27,5 +27,5 @@ class User:
         self.email = email
         self.password_hash = password_hash
         self.role = role
-        self.created_at = created_at or datetime.utcnow()
+        self.created_at = created_at or datetime.now(timezone.utc)
 

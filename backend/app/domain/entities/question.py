@@ -1,5 +1,5 @@
 """Question domain entity."""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 from enum import Enum
@@ -27,5 +27,5 @@ class Question:
         self.text = text
         self.difficulty = difficulty
         self.created_by_user_id = created_by_user_id
-        self.created_at = created_at or datetime.utcnow()
+        self.created_at = created_at or datetime.now(timezone.utc)
 
