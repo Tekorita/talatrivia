@@ -113,7 +113,7 @@ class InMemoryAnswerRepository(AnswerRepositoryPort):
     async def create(self, answer: Answer):
         key = (answer.participation_id, answer.trivia_question_id)
         if key in self.answers or key in self._unique_violations:
-            from app.domain.errors import ConflictError, InvalidStateError, NotFoundError
+            from app.domain.errors import ConflictError
             raise ConflictError("Answer already submitted for this question")
         self.answers[key] = answer
         self._unique_violations.add(key)
@@ -486,7 +486,6 @@ async def test_submit_answer_no_question_started_at():
     """Test submit answer when question_started_at is None."""
     trivia_id = uuid4()
     user_id = uuid4()
-    question_id = uuid4()
     option_id = uuid4()
 
     trivia = Trivia(

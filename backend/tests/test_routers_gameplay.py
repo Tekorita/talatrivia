@@ -1,19 +1,6 @@
-"""Tests for gameplay router."""
-from unittest.mock import AsyncMock, patch
-from uuid import uuid4
-
-import pytest
-from fastapi.testclient import TestClient
-
-from app.main import app
-
-client = TestClient(app)
-
-
 """Tests for gameplay router - basic endpoint coverage."""
 from uuid import uuid4
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
