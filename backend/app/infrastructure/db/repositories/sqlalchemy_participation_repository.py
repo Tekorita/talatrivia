@@ -1,12 +1,14 @@
 """SQLAlchemy participation repository."""
-from typing import Optional, List
+from typing import List
 from uuid import UUID
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.domain.entities.participation import Participation
 from app.domain.ports.participation_repository import ParticipationRepositoryPort
-from app.infrastructure.db.models.participation import ParticipationModel
 from app.infrastructure.db.mappers.participation_mapper import to_domain
+from app.infrastructure.db.models.participation import ParticipationModel
 
 
 class SQLAlchemyParticipationRepository(ParticipationRepositoryPort):
@@ -19,7 +21,7 @@ class SQLAlchemyParticipationRepository(ParticipationRepositoryPort):
         self, 
         trivia_id: UUID, 
         user_id: UUID
-    ) -> Optional[Participation]:
+    ) -> Participation | None:
         """Get participation by trivia and user."""
         result = await self.session.execute(
             select(ParticipationModel).where(

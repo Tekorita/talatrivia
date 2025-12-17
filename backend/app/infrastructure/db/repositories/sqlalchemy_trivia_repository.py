@@ -1,12 +1,13 @@
 """SQLAlchemy trivia repository."""
-from typing import Optional
 from uuid import UUID
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.domain.entities.trivia import Trivia
 from app.domain.ports.trivia_repository import TriviaRepositoryPort
-from app.infrastructure.db.models.trivia import TriviaModel
 from app.infrastructure.db.mappers.trivia_mapper import to_domain
+from app.infrastructure.db.models.trivia import TriviaModel
 
 
 class SQLAlchemyTriviaRepository(TriviaRepositoryPort):
@@ -15,7 +16,7 @@ class SQLAlchemyTriviaRepository(TriviaRepositoryPort):
     def __init__(self, session: AsyncSession):
         self.session = session
     
-    async def get_by_id(self, trivia_id: UUID) -> Optional[Trivia]:
+    async def get_by_id(self, trivia_id: UUID) -> Trivia | None:
         """Get trivia by ID."""
         result = await self.session.execute(
             select(TriviaModel).where(TriviaModel.id == trivia_id)

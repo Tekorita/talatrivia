@@ -1,16 +1,15 @@
-"""Start trivia DTO."""
+"""Advance question DTO."""
 from dataclasses import dataclass
-from datetime import datetime
 from uuid import UUID
 
 from app.domain.enums.trivia_status import TriviaStatus
 
 
 @dataclass
-class StartTriviaDTO:
-    """DTO for start trivia response."""
+class AdvanceQuestionResultDTO:
+    """DTO for advance question result."""
     trivia_id: UUID
-    trivia_status: TriviaStatus
-    started_at: datetime
+    status: TriviaStatus
     current_question_index: int
+    total_questions: int
 

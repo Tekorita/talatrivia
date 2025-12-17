@@ -1,6 +1,5 @@
 """User domain entity."""
 from datetime import UTC, datetime
-from typing import Optional
 from uuid import UUID
 
 
@@ -20,7 +19,7 @@ class User:
         email: str,
         password_hash: str,
         role: str = UserRole.PLAYER,
-        created_at: Optional[datetime] = None,
+        created_at: datetime | None = None,
     ):
         self.id = id
         self.name = name

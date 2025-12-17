@@ -1,6 +1,7 @@
 """Logging configuration."""
 import logging
 import sys
+
 from app.core.config import settings
 
 

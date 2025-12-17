@@ -1,7 +1,6 @@
 """Question domain entity."""
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional
 from uuid import UUID
 
 
@@ -20,8 +19,8 @@ class Question:
         id: UUID,
         text: str,
         difficulty: QuestionDifficulty,
-        created_by_user_id: Optional[UUID] = None,
-        created_at: Optional[datetime] = None,
+        created_by_user_id: UUID | None = None,
+        created_at: datetime | None = None,
     ):
         self.id = id
         self.text = text

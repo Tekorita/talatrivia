@@ -1,8 +1,7 @@
 """Participation domain entity."""
 from datetime import datetime
-from typing import Optional
-from uuid import UUID
 from enum import Enum
+from uuid import UUID
 
 
 class ParticipationStatus(str, Enum):
@@ -24,9 +23,9 @@ class Participation:
         user_id: UUID,
         status: ParticipationStatus = ParticipationStatus.INVITED,
         score: int = 0,
-        joined_at: Optional[datetime] = None,
-        ready_at: Optional[datetime] = None,
-        finished_at: Optional[datetime] = None,
+        joined_at: datetime | None = None,
+        ready_at: datetime | None = None,
+        finished_at: datetime | None = None,
     ):
         self.id = id
         self.trivia_id = trivia_id

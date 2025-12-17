@@ -1,6 +1,7 @@
 """Set ready DTO."""
 from dataclasses import dataclass
 from uuid import UUID
+
 from app.domain.enums.participation_status import ParticipationStatus
 
 

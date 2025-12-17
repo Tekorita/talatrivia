@@ -1,8 +1,9 @@
 """Join trivia DTO."""
 from dataclasses import dataclass
 from uuid import UUID
-from app.domain.enums.trivia_status import TriviaStatus
+
 from app.domain.enums.participation_status import ParticipationStatus
+from app.domain.enums.trivia_status import TriviaStatus
 
 
 @dataclass

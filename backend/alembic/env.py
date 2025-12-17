@@ -1,10 +1,12 @@
 """Alembic environment configuration for async migrations."""
+import asyncio
 from logging.config import fileConfig
+
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
+
 from alembic import context
-import asyncio
 
 # Import app config and base
 from app.core.config import settings
@@ -16,8 +18,8 @@ from app.infrastructure.db.models import (  # noqa: F401
     OptionModel,
     ParticipationModel,
     QuestionModel,
-    TriviaQuestionModel,
     TriviaModel,
+    TriviaQuestionModel,
     UserModel,
 )
 
