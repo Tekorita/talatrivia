@@ -44,6 +44,13 @@ ENV/
 # Alembic
 alembic/versions/*.pyc
 
+# Coverage
+.coverage
+htmlcov/
+*.cover
+.hypothesis/
+.pytest_cache/
+
 # Logs
 *.log
 logs/
