@@ -1,5 +1,4 @@
 """Configuration settings for the application."""
-from pydantic import ConfigDict
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,7 +14,7 @@ class Settings(BaseSettings):
     ENV: str = "development"
     
     # Database
-    DATABASE_URL: str
+    DATABASE_URL: str = "postgresql+asyncpg://test:test@localhost/test"
 
 
 settings = Settings()
