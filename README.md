@@ -50,6 +50,25 @@ docker compose -f docker-compose-local.yml up --build
 docker compose -f docker-compose-local.yml exec backend alembic upgrade head
 ```
 
+4. Crea el usuario admin inicial:
+
+```bash
+docker compose -f docker-compose-local.yml exec backend python scripts/seed_admin.py
+```
+
+O alternativamente, usando PYTHONPATH:
+
+```bash
+docker compose -f docker-compose-local.yml exec backend sh -c "PYTHONPATH=/app python scripts/seed_admin.py"
+```
+
+El script usa las siguientes variables de entorno (configuradas en `docker-compose-local.yml`):
+- `ADMIN_EMAIL` (default: `admin@test.com`)
+- `ADMIN_PASSWORD` (default: `admin123`)
+- `ADMIN_NAME` (default: `Admin`)
+
+Si el usuario admin ya existe, el script no hará nada.
+
 ## Desarrollo Local (sin Docker)
 
 Para desarrollo local del backend con debug en VSCode/Cursor:
@@ -78,6 +97,14 @@ alembic upgrade head
 
 #### Health
 - `GET /health` - Health check endpoint
+
+#### Auth
+- `POST /auth/login` - Authenticate user with email and password
+  - Body: `{ "email": "user@example.com", "password": "password" }`
+  - Returns: `{ "id": "uuid", "name": "User Name", "email": "user@example.com", "role": "ADMIN" | "PLAYER" }`
+  - Errors:
+    - `401` - Invalid email or password
+    - `404` - User not found
 
 #### Lobby
 - `POST /trivias/{trivia_id}/join` - Join a trivia
@@ -116,24 +143,45 @@ Para aplicar migraciones:
 docker compose -f docker-compose-local.yml exec backend alembic upgrade head
 ```
 
+## Autenticación
+
+El sistema usa autenticación simple con email y password (sin JWT por ahora, pero preparado para agregarlo después).
+
+### Crear Usuario Admin
+
+Para crear el usuario admin inicial, ejecuta:
+
+```bash
+docker compose -f docker-compose-local.yml exec backend python scripts/seed_admin.py
+```
+
+Esto creará un usuario admin con las credenciales configuradas en `docker-compose-local.yml`:
+- Email: `admin@test.com` (configurable via `ADMIN_EMAIL`)
+- Password: `admin123` (configurable via `ADMIN_PASSWORD`)
+- Name: `Admin` (configurable via `ADMIN_NAME`)
+
+El script es idempotente: si el usuario ya existe, no hará nada.
+
+### Probar Login
+
+```bash
+curl -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "admin@test.com", "password": "admin123"}'
+```
+
 ## Pruebas de Endpoints de Lobby
 
 Para probar los endpoints de lobby, primero necesitas crear datos de prueba en la base de datos:
 
 1. **Crear usuarios y trivia en la base de datos** (puedes usar DBeaver o psql):
    ```sql
-   -- Crear usuarios
-   INSERT INTO users (id, name, email, password_hash, role, created_at)
-   VALUES 
-     ('11111111-1111-1111-1111-111111111111', 'Admin User', 'admin@test.com', 'hash', 'ADMIN', NOW()),
-     ('22222222-2222-2222-2222-222222222222', 'Player 1', 'player1@test.com', 'hash', 'PLAYER', NOW()),
-     ('33333333-3333-3333-3333-333333333333', 'Player 2', 'player2@test.com', 'hash', 'PLAYER', NOW());
-   
-   -- Crear trivia
+   -- Nota: Los usuarios ahora deben tener password_hash válido (usar el script seed_admin.py o generar hash con bcrypt)
+   -- Crear trivia (asumiendo que ya tienes un admin creado con el script seed_admin.py)
    INSERT INTO trivias (id, title, description, created_by_user_id, status, current_question_index, created_at)
    VALUES 
      ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Test Trivia', 'Test Description', 
-      '11111111-1111-1111-1111-111111111111', 'LOBBY', 0, NOW());
+      '<admin-user-id-from-seed>', 'LOBBY', 0, NOW());
    ```
 
 2. **Probar endpoints** (usando curl o Postman):

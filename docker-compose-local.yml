@@ -30,6 +30,9 @@ services:
     environment:
       - ENV=development
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/talatrivia
+      - ADMIN_EMAIL=admin@test.com
+      - ADMIN_PASSWORD=admin123
+      - ADMIN_NAME=Admin
     # Optional: uncomment if you want to use .env file
     # env_file:
     #   - ./backend/.env
