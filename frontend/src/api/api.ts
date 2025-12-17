@@ -51,8 +51,18 @@ export async function post<T>(
     });
 
     if (!response.ok) {
+      // Try to parse error message from response
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        if (errorData.detail) {
+          errorMessage = errorData.detail;
+        }
+      } catch {
+        // If parsing fails, use default message
+      }
       return {
-        error: `HTTP error! status: ${response.status}`,
+        error: errorMessage,
       };
     }
 
