@@ -11,7 +11,7 @@ from app.domain.entities.participation import Participation, ParticipationStatus
 from app.domain.entities.question import Question, QuestionDifficulty
 from app.domain.entities.trivia import Trivia, TriviaStatus
 from app.domain.entities.trivia_question import TriviaQuestion
-from app.domain.errors import ConflictError
+from app.domain.errors import ConflictError, InvalidStateError, NotFoundError
 from app.domain.ports.answer_repository import AnswerRepositoryPort
 from app.domain.ports.option_repository import OptionRepositoryPort
 from app.domain.ports.participation_repository import ParticipationRepositoryPort
@@ -479,4 +479,244 @@ async def test_submit_answer_duplicate():
     # Second submission should fail
     with pytest.raises(ConflictError):
         await use_case.execute(trivia_id, user_id, option_id)
+
+
+@pytest.mark.asyncio
+async def test_submit_answer_no_question_started_at():
+    """Test submit answer when question_started_at is None."""
+    trivia_id = uuid4()
+    user_id = uuid4()
+    option_id = uuid4()
+
+    trivia = Trivia(
+        id=trivia_id,
+        title="Test Trivia",
+        description="Test Description",
+        created_by_user_id=uuid4(),
+        status=TriviaStatus.IN_PROGRESS,
+        current_question_index=0,
+        question_started_at=None,  # None
+    )
+
+    participation = Participation(
+        id=uuid4(),
+        trivia_id=trivia_id,
+        user_id=user_id,
+        status=ParticipationStatus.READY,
+    )
+
+    trivia_repo = InMemoryTriviaRepository()
+    trivia_repo.trivias[trivia_id] = trivia
+
+    participation_repo = InMemoryParticipationRepository()
+    participation_repo.participations[(trivia_id, user_id)] = participation
+
+    trivia_question_repo = InMemoryTriviaQuestionRepository()
+    question_repo = InMemoryQuestionRepository()
+    option_repo = InMemoryOptionRepository()
+    answer_repo = InMemoryAnswerRepository()
+
+    use_case = SubmitAnswerUseCase(
+        trivia_repo,
+        participation_repo,
+        trivia_question_repo,
+        question_repo,
+        option_repo,
+        answer_repo,
+    )
+
+    # Execute & Assert
+    with pytest.raises(InvalidStateError, match="Question has not been started"):
+        await use_case.execute(trivia_id, user_id, option_id)
+
+
+@pytest.mark.asyncio
+async def test_submit_answer_trivia_question_not_found():
+    """Test submit answer when trivia question doesn't exist."""
+    trivia_id = uuid4()
+    user_id = uuid4()
+    option_id = uuid4()
+
+    trivia = Trivia(
+        id=trivia_id,
+        title="Test Trivia",
+        description="Test Description",
+        created_by_user_id=uuid4(),
+        status=TriviaStatus.IN_PROGRESS,
+        current_question_index=0,
+        question_started_at=datetime.now(UTC),
+    )
+
+    participation = Participation(
+        id=uuid4(),
+        trivia_id=trivia_id,
+        user_id=user_id,
+        status=ParticipationStatus.READY,
+    )
+
+    trivia_repo = InMemoryTriviaRepository()
+    trivia_repo.trivias[trivia_id] = trivia
+
+    participation_repo = InMemoryParticipationRepository()
+    participation_repo.participations[(trivia_id, user_id)] = participation
+
+    trivia_question_repo = InMemoryTriviaQuestionRepository()
+    # No trivia question added
+
+    question_repo = InMemoryQuestionRepository()
+    option_repo = InMemoryOptionRepository()
+    answer_repo = InMemoryAnswerRepository()
+
+    use_case = SubmitAnswerUseCase(
+        trivia_repo,
+        participation_repo,
+        trivia_question_repo,
+        question_repo,
+        option_repo,
+        answer_repo,
+    )
+
+    # Execute & Assert
+    with pytest.raises(NotFoundError, match="Question at index .* not found"):
+        await use_case.execute(trivia_id, user_id, option_id)
+
+
+@pytest.mark.asyncio
+async def test_submit_answer_question_not_found():
+    """Test submit answer when question doesn't exist."""
+    trivia_id = uuid4()
+    user_id = uuid4()
+    question_id = uuid4()
+    option_id = uuid4()
+
+    trivia = Trivia(
+        id=trivia_id,
+        title="Test Trivia",
+        description="Test Description",
+        created_by_user_id=uuid4(),
+        status=TriviaStatus.IN_PROGRESS,
+        current_question_index=0,
+        question_started_at=datetime.now(UTC),
+    )
+
+    participation = Participation(
+        id=uuid4(),
+        trivia_id=trivia_id,
+        user_id=user_id,
+        status=ParticipationStatus.READY,
+    )
+
+    trivia_question = TriviaQuestion(
+        id=uuid4(),
+        trivia_id=trivia_id,
+        question_id=question_id,
+        position=0,
+        time_limit_seconds=30,
+    )
+
+    trivia_repo = InMemoryTriviaRepository()
+    trivia_repo.trivias[trivia_id] = trivia
+
+    participation_repo = InMemoryParticipationRepository()
+    participation_repo.participations[(trivia_id, user_id)] = participation
+
+    trivia_question_repo = InMemoryTriviaQuestionRepository()
+    trivia_question_repo.trivia_questions[(trivia_id, 0)] = trivia_question
+
+    question_repo = InMemoryQuestionRepository()
+    # No question added
+
+    option_repo = InMemoryOptionRepository()
+    answer_repo = InMemoryAnswerRepository()
+
+    use_case = SubmitAnswerUseCase(
+        trivia_repo,
+        participation_repo,
+        trivia_question_repo,
+        question_repo,
+        option_repo,
+        answer_repo,
+    )
+
+    # Execute & Assert
+    with pytest.raises(NotFoundError, match="Question .* not found"):
+        await use_case.execute(trivia_id, user_id, option_id)
+
+
+@pytest.mark.asyncio
+async def test_submit_answer_option_not_belongs_to_question():
+    """Test submit answer when option doesn't belong to question."""
+    trivia_id = uuid4()
+    user_id = uuid4()
+    question_id = uuid4()
+    option_id = uuid4()
+    wrong_option_id = uuid4()
+
+    trivia = Trivia(
+        id=trivia_id,
+        title="Test Trivia",
+        description="Test Description",
+        created_by_user_id=uuid4(),
+        status=TriviaStatus.IN_PROGRESS,
+        current_question_index=0,
+        question_started_at=datetime.now(UTC),
+    )
+
+    participation = Participation(
+        id=uuid4(),
+        trivia_id=trivia_id,
+        user_id=user_id,
+        status=ParticipationStatus.READY,
+    )
+
+    trivia_question = TriviaQuestion(
+        id=uuid4(),
+        trivia_id=trivia_id,
+        question_id=question_id,
+        position=0,
+        time_limit_seconds=30,
+    )
+
+    question = Question(
+        id=question_id,
+        text="Test Question",
+        difficulty=QuestionDifficulty.EASY,
+    )
+
+    option = Option(
+        id=option_id,
+        question_id=question_id,
+        text="Correct",
+        is_correct=True,
+    )
+
+    trivia_repo = InMemoryTriviaRepository()
+    trivia_repo.trivias[trivia_id] = trivia
+
+    participation_repo = InMemoryParticipationRepository()
+    participation_repo.participations[(trivia_id, user_id)] = participation
+
+    trivia_question_repo = InMemoryTriviaQuestionRepository()
+    trivia_question_repo.trivia_questions[(trivia_id, 0)] = trivia_question
+
+    question_repo = InMemoryQuestionRepository()
+    question_repo.questions[question_id] = question
+
+    option_repo = InMemoryOptionRepository()
+    option_repo.options[question_id] = [option]  # Only option_id, not wrong_option_id
+
+    answer_repo = InMemoryAnswerRepository()
+
+    use_case = SubmitAnswerUseCase(
+        trivia_repo,
+        participation_repo,
+        trivia_question_repo,
+        question_repo,
+        option_repo,
+        answer_repo,
+    )
+
+    # Execute & Assert - try to submit wrong_option_id
+    with pytest.raises(NotFoundError, match="Option .* does not belong to question"):
+        await use_case.execute(trivia_id, user_id, wrong_option_id)
 

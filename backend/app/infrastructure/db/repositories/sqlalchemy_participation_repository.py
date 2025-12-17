@@ -68,11 +68,11 @@ class SQLAlchemyParticipationRepository(ParticipationRepositoryPort):
         await self.session.commit()
     
     async def list_by_trivia(self, trivia_id: UUID) -> List[Participation]:
-        """List all participations for a trivia."""
+        """List all participations for a trivia, ordered by score DESC."""
         result = await self.session.execute(
-            select(ParticipationModel).where(
-                ParticipationModel.trivia_id == trivia_id
-            )
+            select(ParticipationModel)
+            .where(ParticipationModel.trivia_id == trivia_id)
+            .order_by(ParticipationModel.score.desc())
         )
         orm_models = result.scalars().all()
         return [to_domain(orm_model) for orm_model in orm_models]

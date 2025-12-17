@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.use_cases.advance_question import AdvanceQuestionUseCase
 from app.application.use_cases.get_current_question import GetCurrentQuestionUseCase
+from app.application.use_cases.get_trivia_ranking import GetTriviaRankingUseCase
 from app.application.use_cases.submit_answer import SubmitAnswerUseCase
 from app.domain.errors import ConflictError, ForbiddenError, InvalidStateError, NotFoundError
 from app.infrastructure.db.repositories import (
@@ -16,6 +17,7 @@ from app.infrastructure.db.repositories import (
     SQLAlchemyQuestionRepository,
     SQLAlchemyTriviaQuestionRepository,
     SQLAlchemyTriviaRepository,
+    SQLAlchemyUserRepository,
 )
 from app.infrastructure.db.session import get_db
 
@@ -211,6 +213,57 @@ async def advance_question(
     except InvalidStateError as e:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
+            detail=str(e),
+        ) from e
+
+
+def get_get_trivia_ranking_use_case(
+    db: AsyncSession = Depends(get_db),
+) -> GetTriviaRankingUseCase:
+    """Dependency to get GetTriviaRankingUseCase."""
+    trivia_repo = SQLAlchemyTriviaRepository(db)
+    participation_repo = SQLAlchemyParticipationRepository(db)
+    user_repo = SQLAlchemyUserRepository(db)
+    return GetTriviaRankingUseCase(
+        trivia_repo,
+        participation_repo,
+        user_repo,
+    )
+
+
+@router.get("/{trivia_id}/ranking")
+async def get_trivia_ranking(
+    trivia_id: UUID,
+    use_case: GetTriviaRankingUseCase = Depends(get_get_trivia_ranking_use_case),
+):
+    """
+    Get the current ranking of a trivia.
+
+    Args:
+        trivia_id: The trivia ID
+        use_case: Get trivia ranking use case
+
+    Returns:
+        Trivia ranking DTO with participants ordered by score DESC
+    """
+    try:
+        result = await use_case.execute(trivia_id)
+        return {
+            "trivia_id": str(result.trivia_id),
+            "status": result.status.value,
+            "ranking": [
+                {
+                    "position": entry.position,
+                    "user_id": str(entry.user_id),
+                    "user_name": entry.user_name,
+                    "score": entry.score,
+                }
+                for entry in result.ranking
+            ],
+        }
+    except NotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         ) from e
 

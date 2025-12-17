@@ -120,3 +120,114 @@ async def test_join_trivia_invalid_state():
     with pytest.raises(InvalidStateError):
         await use_case.execute(trivia_id, user_id)
 
+
+@pytest.mark.asyncio
+async def test_join_trivia_idempotent_existing_joined():
+    """Test join trivia when participation already exists and is JOINED (idempotent)."""
+    trivia_id = uuid4()
+    user_id = uuid4()
+    participation_id = uuid4()
+    
+    trivia = Trivia(
+        id=trivia_id,
+        title="Test Trivia",
+        description="Test Description",
+        created_by_user_id=uuid4(),
+        status=TriviaStatus.LOBBY,
+    )
+    
+    existing_participation = Participation(
+        id=participation_id,
+        trivia_id=trivia_id,
+        user_id=user_id,
+        status=ParticipationStatus.JOINED,
+    )
+    
+    trivia_repo = InMemoryTriviaRepository()
+    trivia_repo.trivias[trivia_id] = trivia
+    
+    participation_repo = InMemoryParticipationRepository()
+    participation_repo.participations[(trivia_id, user_id)] = existing_participation
+    
+    use_case = JoinTriviaUseCase(trivia_repo, participation_repo)
+    
+    # Execute
+    result = await use_case.execute(trivia_id, user_id)
+    
+    # Assert - should return existing participation
+    assert result.participation_id == participation_id
+    assert result.participation_status == ParticipationStatus.JOINED
+    assert result.trivia_status == TriviaStatus.LOBBY
+
+
+@pytest.mark.asyncio
+async def test_join_trivia_idempotent_existing_ready():
+    """Test join trivia when participation already exists and is READY (idempotent)."""
+    trivia_id = uuid4()
+    user_id = uuid4()
+    participation_id = uuid4()
+    
+    trivia = Trivia(
+        id=trivia_id,
+        title="Test Trivia",
+        description="Test Description",
+        created_by_user_id=uuid4(),
+        status=TriviaStatus.LOBBY,
+    )
+    
+    existing_participation = Participation(
+        id=participation_id,
+        trivia_id=trivia_id,
+        user_id=user_id,
+        status=ParticipationStatus.READY,
+    )
+    
+    trivia_repo = InMemoryTriviaRepository()
+    trivia_repo.trivias[trivia_id] = trivia
+    
+    participation_repo = InMemoryParticipationRepository()
+    participation_repo.participations[(trivia_id, user_id)] = existing_participation
+    
+    use_case = JoinTriviaUseCase(trivia_repo, participation_repo)
+    
+    # Execute
+    result = await use_case.execute(trivia_id, user_id)
+    
+    # Assert - should return existing participation
+    assert result.participation_id == participation_id
+    assert result.participation_status == ParticipationStatus.READY
+
+
+@pytest.mark.asyncio
+async def test_join_trivia_draft_transitions_to_lobby():
+    """Test join trivia when trivia is DRAFT transitions to LOBBY."""
+    trivia_id = uuid4()
+    user_id = uuid4()
+    
+    trivia = Trivia(
+        id=trivia_id,
+        title="Test Trivia",
+        description="Test Description",
+        created_by_user_id=uuid4(),
+        status=TriviaStatus.DRAFT,  # DRAFT status
+    )
+    
+    trivia_repo = InMemoryTriviaRepository()
+    trivia_repo.trivias[trivia_id] = trivia
+    
+    participation_repo = InMemoryParticipationRepository()
+    
+    use_case = JoinTriviaUseCase(trivia_repo, participation_repo)
+    
+    # Execute
+    result = await use_case.execute(trivia_id, user_id)
+    
+    # Assert
+    assert result.trivia_id == trivia_id
+    assert result.participation_status == ParticipationStatus.JOINED
+    assert result.trivia_status == TriviaStatus.LOBBY  # Should be LOBBY now
+    
+    # Verify trivia was updated
+    updated_trivia = trivia_repo.trivias[trivia_id]
+    assert updated_trivia.status == TriviaStatus.LOBBY
+
