@@ -156,7 +156,7 @@ class SubmitAnswerUseCase:
         # Persist answer and update participation score in transaction
         # Note: Both operations use the same session, so they're in the same transaction
         try:
-            created_answer = await self.answer_repository.create(answer)
+            await self.answer_repository.create(answer)
             # Update participation score
             participation.score += earned_points
             await self.participation_repository.update(participation)
