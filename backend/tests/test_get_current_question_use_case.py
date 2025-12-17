@@ -327,3 +327,203 @@ async def test_get_current_question_time_remaining_calculation():
     assert result.time_remaining_seconds <= 20
     assert result.time_remaining_seconds >= 19  # Allow for small time differences
 
+
+@pytest.mark.asyncio
+async def test_get_current_question_trivia_not_found():
+    """Test get current question when trivia doesn't exist."""
+    trivia_id = uuid4()
+    user_id = uuid4()
+
+    trivia_repo = InMemoryTriviaRepository()
+    participation_repo = InMemoryParticipationRepository()
+    trivia_question_repo = InMemoryTriviaQuestionRepository()
+    question_repo = InMemoryQuestionRepository()
+    option_repo = InMemoryOptionRepository()
+
+    use_case = GetCurrentQuestionUseCase(
+        trivia_repo,
+        participation_repo,
+        trivia_question_repo,
+        question_repo,
+        option_repo,
+    )
+
+    # Execute & Assert
+    with pytest.raises(NotFoundError, match="Trivia .* not found"):
+        await use_case.execute(trivia_id, user_id)
+
+
+@pytest.mark.asyncio
+async def test_get_current_question_trivia_question_not_found():
+    """Test get current question when trivia question doesn't exist."""
+    trivia_id = uuid4()
+    user_id = uuid4()
+
+    trivia = Trivia(
+        id=trivia_id,
+        title="Test Trivia",
+        description="Test Description",
+        created_by_user_id=uuid4(),
+        status=TriviaStatus.IN_PROGRESS,
+        current_question_index=0,
+        question_started_at=datetime.now(UTC),
+    )
+
+    participation = Participation(
+        id=uuid4(),
+        trivia_id=trivia_id,
+        user_id=user_id,
+        status=ParticipationStatus.READY,
+    )
+
+    trivia_repo = InMemoryTriviaRepository()
+    trivia_repo.trivias[trivia_id] = trivia
+
+    participation_repo = InMemoryParticipationRepository()
+    participation_repo.participations[(trivia_id, user_id)] = participation
+
+    trivia_question_repo = InMemoryTriviaQuestionRepository()
+    # No trivia question added
+
+    question_repo = InMemoryQuestionRepository()
+    option_repo = InMemoryOptionRepository()
+
+    use_case = GetCurrentQuestionUseCase(
+        trivia_repo,
+        participation_repo,
+        trivia_question_repo,
+        question_repo,
+        option_repo,
+    )
+
+    # Execute & Assert
+    with pytest.raises(NotFoundError, match="Question at index .* not found"):
+        await use_case.execute(trivia_id, user_id)
+
+
+@pytest.mark.asyncio
+async def test_get_current_question_question_not_found():
+    """Test get current question when question doesn't exist."""
+    trivia_id = uuid4()
+    user_id = uuid4()
+    question_id = uuid4()
+
+    trivia = Trivia(
+        id=trivia_id,
+        title="Test Trivia",
+        description="Test Description",
+        created_by_user_id=uuid4(),
+        status=TriviaStatus.IN_PROGRESS,
+        current_question_index=0,
+        question_started_at=datetime.now(UTC),
+    )
+
+    participation = Participation(
+        id=uuid4(),
+        trivia_id=trivia_id,
+        user_id=user_id,
+        status=ParticipationStatus.READY,
+    )
+
+    trivia_question = TriviaQuestion(
+        id=uuid4(),
+        trivia_id=trivia_id,
+        question_id=question_id,
+        position=0,
+        time_limit_seconds=30,
+    )
+
+    trivia_repo = InMemoryTriviaRepository()
+    trivia_repo.trivias[trivia_id] = trivia
+
+    participation_repo = InMemoryParticipationRepository()
+    participation_repo.participations[(trivia_id, user_id)] = participation
+
+    trivia_question_repo = InMemoryTriviaQuestionRepository()
+    trivia_question_repo.trivia_questions[(trivia_id, 0)] = trivia_question
+
+    question_repo = InMemoryQuestionRepository()
+    # No question added
+
+    option_repo = InMemoryOptionRepository()
+
+    use_case = GetCurrentQuestionUseCase(
+        trivia_repo,
+        participation_repo,
+        trivia_question_repo,
+        question_repo,
+        option_repo,
+    )
+
+    # Execute & Assert
+    with pytest.raises(NotFoundError, match="Question .* not found"):
+        await use_case.execute(trivia_id, user_id)
+
+
+@pytest.mark.asyncio
+async def test_get_current_question_no_question_started_at():
+    """Test get current question when question_started_at is None."""
+    trivia_id = uuid4()
+    user_id = uuid4()
+    question_id = uuid4()
+
+    trivia = Trivia(
+        id=trivia_id,
+        title="Test Trivia",
+        description="Test Description",
+        created_by_user_id=uuid4(),
+        status=TriviaStatus.IN_PROGRESS,
+        current_question_index=0,
+        question_started_at=None,  # None
+    )
+
+    participation = Participation(
+        id=uuid4(),
+        trivia_id=trivia_id,
+        user_id=user_id,
+        status=ParticipationStatus.READY,
+    )
+
+    trivia_question = TriviaQuestion(
+        id=uuid4(),
+        trivia_id=trivia_id,
+        question_id=question_id,
+        position=0,
+        time_limit_seconds=30,
+    )
+
+    question = Question(
+        id=question_id,
+        text="Test Question",
+        difficulty=QuestionDifficulty.EASY,
+    )
+
+    trivia_repo = InMemoryTriviaRepository()
+    trivia_repo.trivias[trivia_id] = trivia
+
+    participation_repo = InMemoryParticipationRepository()
+    participation_repo.participations[(trivia_id, user_id)] = participation
+
+    trivia_question_repo = InMemoryTriviaQuestionRepository()
+    trivia_question_repo.trivia_questions[(trivia_id, 0)] = trivia_question
+
+    question_repo = InMemoryQuestionRepository()
+    question_repo.questions[question_id] = question
+
+    option_repo = InMemoryOptionRepository()
+    option_repo.options[question_id] = []
+
+    use_case = GetCurrentQuestionUseCase(
+        trivia_repo,
+        participation_repo,
+        trivia_question_repo,
+        question_repo,
+        option_repo,
+    )
+
+    # Execute
+    result = await use_case.execute(trivia_id, user_id)
+
+    # Assert - should use full time_limit_seconds when question_started_at is None
+    assert result.time_remaining_seconds == 30
+
