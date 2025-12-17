@@ -1,12 +1,13 @@
 """SQLAlchemy trivia question repository."""
-from typing import Optional
 from uuid import UUID
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+
 from app.domain.entities.trivia_question import TriviaQuestion
 from app.domain.ports.trivia_question_repository import TriviaQuestionRepositoryPort
-from app.infrastructure.db.models.trivia_question import TriviaQuestionModel
 from app.infrastructure.db.mappers.trivia_question_mapper import to_domain
+from app.infrastructure.db.models.trivia_question import TriviaQuestionModel
 
 
 class SQLAlchemyTriviaQuestionRepository(TriviaQuestionRepositoryPort):
@@ -17,7 +18,7 @@ class SQLAlchemyTriviaQuestionRepository(TriviaQuestionRepositoryPort):
 
     async def get_by_trivia_and_order(
         self, trivia_id: UUID, order: int
-    ) -> Optional[TriviaQuestion]:
+    ) -> TriviaQuestion | None:
         """Get trivia question by trivia ID and order/position."""
         result = await self.session.execute(
             select(TriviaQuestionModel).where(

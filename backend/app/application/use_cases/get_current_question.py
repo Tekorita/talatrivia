@@ -1,6 +1,7 @@
 """Get current question use case."""
 from datetime import UTC, datetime
 from uuid import UUID
+
 from app.application.dtos.current_question_dto import CurrentQuestionDTO, OptionDTO
 from app.domain.enums.trivia_status import TriviaStatus
 from app.domain.errors import InvalidStateError, NotFoundError

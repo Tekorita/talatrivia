@@ -1,13 +1,10 @@
 """Lobby router."""
 from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.infrastructure.db.session import get_db
-from app.infrastructure.db.repositories import (
-    SQLAlchemyTriviaRepository,
-    SQLAlchemyParticipationRepository,
-)
+
 from app.application.use_cases import (
     JoinTriviaUseCase,
     SetReadyUseCase,
@@ -18,6 +15,11 @@ from app.domain.errors import (
     InvalidStateError,
     NotFoundError,
 )
+from app.infrastructure.db.repositories import (
+    SQLAlchemyParticipationRepository,
+    SQLAlchemyTriviaRepository,
+)
+from app.infrastructure.db.session import get_db
 
 router = APIRouter(prefix="/trivias", tags=["lobby"])
 

@@ -1,9 +1,12 @@
 """Question SQLAlchemy model."""
-from sqlalchemy import Column, String, DateTime, ForeignKey, Enum as SQLEnum
+import uuid
+from datetime import datetime
+
+from sqlalchemy import Column, DateTime, ForeignKey, String
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from datetime import datetime
-import uuid
+
 from app.infrastructure.db.base import Base
 
 

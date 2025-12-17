@@ -5,9 +5,9 @@ from uuid import UUID
 from app.application.dtos.set_ready_dto import SetReadyDTO
 from app.domain.entities.participation import ParticipationStatus
 from app.domain.enums.trivia_status import TriviaStatus
-from app.domain.errors import NotFoundError, InvalidStateError
-from app.domain.ports.trivia_repository import TriviaRepositoryPort
+from app.domain.errors import InvalidStateError, NotFoundError
 from app.domain.ports.participation_repository import ParticipationRepositoryPort
+from app.domain.ports.trivia_repository import TriviaRepositoryPort
 
 
 class SetReadyUseCase:

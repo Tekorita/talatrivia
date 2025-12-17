@@ -1,6 +1,7 @@
 """Option repository port."""
 from abc import ABC, abstractmethod
 from uuid import UUID
+
 from app.domain.entities.option import Option
 
 

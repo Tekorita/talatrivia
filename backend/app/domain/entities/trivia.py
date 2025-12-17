@@ -1,7 +1,6 @@
 """Trivia domain entity."""
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional
 from uuid import UUID
 
 
@@ -22,13 +21,13 @@ class Trivia:
         title: str,
         description: str,
         created_by_user_id: UUID,
-        topic: Optional[str] = None,
+        topic: str | None = None,
         status: TriviaStatus = TriviaStatus.DRAFT,
         current_question_index: int = 0,
-        question_started_at: Optional[datetime] = None,
-        created_at: Optional[datetime] = None,
-        started_at: Optional[datetime] = None,
-        finished_at: Optional[datetime] = None,
+        question_started_at: datetime | None = None,
+        created_at: datetime | None = None,
+        started_at: datetime | None = None,
+        finished_at: datetime | None = None,
     ):
         self.id = id
         self.title = title

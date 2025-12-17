@@ -1,8 +1,10 @@
 """TriviaQuestion SQLAlchemy model."""
-from sqlalchemy import Column, Integer, ForeignKey, UniqueConstraint
+import uuid
+
+from sqlalchemy import Column, ForeignKey, Integer, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-import uuid
+
 from app.infrastructure.db.base import Base
 
 

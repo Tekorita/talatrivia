@@ -1,12 +1,14 @@
 """Tests for JoinTriviaUseCase."""
-import pytest
 from uuid import UUID, uuid4
+
+import pytest
+
 from app.application.use_cases.join_trivia import JoinTriviaUseCase
-from app.domain.entities.trivia import Trivia, TriviaStatus
 from app.domain.entities.participation import Participation, ParticipationStatus
-from app.domain.ports.trivia_repository import TriviaRepositoryPort
+from app.domain.entities.trivia import Trivia, TriviaStatus
+from app.domain.errors import InvalidStateError, NotFoundError
 from app.domain.ports.participation_repository import ParticipationRepositoryPort
-from app.domain.errors import NotFoundError, InvalidStateError
+from app.domain.ports.trivia_repository import TriviaRepositoryPort
 
 
 class InMemoryTriviaRepository(TriviaRepositoryPort):

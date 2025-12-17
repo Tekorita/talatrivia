@@ -6,9 +6,9 @@ from uuid import UUID
 from app.application.dtos.join_trivia_dto import JoinTriviaDTO
 from app.domain.entities.participation import Participation, ParticipationStatus
 from app.domain.enums.trivia_status import TriviaStatus
-from app.domain.errors import NotFoundError, InvalidStateError
-from app.domain.ports.trivia_repository import TriviaRepositoryPort
+from app.domain.errors import InvalidStateError, NotFoundError
 from app.domain.ports.participation_repository import ParticipationRepositoryPort
+from app.domain.ports.trivia_repository import TriviaRepositoryPort
 
 
 class JoinTriviaUseCase:

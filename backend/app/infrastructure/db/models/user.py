@@ -1,8 +1,11 @@
 """User SQLAlchemy model."""
-from sqlalchemy import Column, String, DateTime, Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import UUID
-from datetime import datetime
 import uuid
+from datetime import datetime
+
+from sqlalchemy import Column, DateTime, String
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import UUID
+
 from app.infrastructure.db.base import Base
 
 

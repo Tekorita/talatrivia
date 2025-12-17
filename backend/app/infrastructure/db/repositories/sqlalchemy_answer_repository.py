@@ -1,13 +1,15 @@
 """SQLAlchemy answer repository."""
 from uuid import UUID
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.domain.entities.answer import Answer
 from app.domain.errors import ConflictError
 from app.domain.ports.answer_repository import AnswerRepositoryPort
-from app.infrastructure.db.models.answer import AnswerModel
 from app.infrastructure.db.mappers.answer_mapper import to_domain
+from app.infrastructure.db.models.answer import AnswerModel
 
 
 class SQLAlchemyAnswerRepository(AnswerRepositoryPort):

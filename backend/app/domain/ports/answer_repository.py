@@ -1,7 +1,7 @@
 """Answer repository port."""
 from abc import ABC, abstractmethod
-from typing import Optional
 from uuid import UUID
+
 from app.domain.entities.answer import Answer
 
 
@@ -11,7 +11,7 @@ class AnswerRepositoryPort(ABC):
     @abstractmethod
     async def get_by_participation_and_trivia_question(
         self, participation_id: UUID, trivia_question_id: UUID
-    ) -> Optional[Answer]:
+    ) -> Answer | None:
         """
         Get answer by participation and trivia question.
 

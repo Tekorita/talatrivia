@@ -1,7 +1,7 @@
 """TriviaQuestion repository port."""
 from abc import ABC, abstractmethod
-from typing import Optional
 from uuid import UUID
+
 from app.domain.entities.trivia_question import TriviaQuestion
 
 
@@ -11,7 +11,7 @@ class TriviaQuestionRepositoryPort(ABC):
     @abstractmethod
     async def get_by_trivia_and_order(
         self, trivia_id: UUID, order: int
-    ) -> Optional[TriviaQuestion]:
+    ) -> TriviaQuestion | None:
         """
         Get trivia question by trivia ID and order/position.
 

@@ -1,8 +1,10 @@
 """Answer SQLAlchemy model."""
-from sqlalchemy import Column, Boolean, Integer, DateTime, ForeignKey, UniqueConstraint
+import uuid
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-import uuid
+
 from app.infrastructure.db.base import Base
 
 

@@ -1,7 +1,8 @@
 """Participation repository port."""
 from abc import ABC, abstractmethod
-from typing import Optional, List
+from typing import List
 from uuid import UUID
+
 from app.domain.entities.participation import Participation
 
 
@@ -13,7 +14,7 @@ class ParticipationRepositoryPort(ABC):
         self, 
         trivia_id: UUID, 
         user_id: UUID
-    ) -> Optional[Participation]:
+    ) -> Participation | None:
         """
         Get participation by trivia and user.
         

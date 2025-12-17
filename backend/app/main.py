@@ -1,5 +1,6 @@
 """FastAPI application entry point."""
 from fastapi import FastAPI
+
 from app.core.logging import setup_logging
 from app.infrastructure.api.routers import gameplay, health, lobby
 

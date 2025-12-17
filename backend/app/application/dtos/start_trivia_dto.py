@@ -1,7 +1,8 @@
 """Start trivia DTO."""
 from dataclasses import dataclass
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
+
 from app.domain.enums.trivia_status import TriviaStatus
 
 
