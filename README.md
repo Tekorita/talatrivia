@@ -87,6 +87,13 @@ alembic upgrade head
 - `POST /trivias/{trivia_id}/start` - Start a trivia (admin only)
   - Body: `{ "admin_user_id": "uuid" }`
 
+#### Gameplay
+- `GET /trivias/{trivia_id}/current-question?user_id={uuid}` - Get current question
+  - Returns: Question with options (without correct answer) and time remaining
+- `POST /trivias/{trivia_id}/answer` - Submit an answer
+  - Body: `{ "user_id": "uuid", "selected_option_id": "uuid" }`
+  - Returns: Answer result with correctness, earned points, and total score
+
 ### Arquitectura
 
 El backend sigue Arquitectura Hexagonal (Ports & Adapters) y principios SOLID:
@@ -145,6 +152,14 @@ Para probar los endpoints de lobby, primero necesitas crear datos de prueba en l
    curl -X POST http://localhost:8000/trivias/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/start \
      -H "Content-Type: application/json" \
      -d '{"admin_user_id": "11111111-1111-1111-1111-111111111111"}'
+   
+   # Get current question
+   curl -X GET "http://localhost:8000/trivias/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/current-question?user_id=22222222-2222-2222-2222-222222222222"
+   
+   # Submit answer
+   curl -X POST http://localhost:8000/trivias/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/answer \
+     -H "Content-Type: application/json" \
+     -d '{"user_id": "22222222-2222-2222-2222-222222222222", "selected_option_id": "option-uuid-here"}'
    ```
 
 ## Tareas de VSCode/Cursor
