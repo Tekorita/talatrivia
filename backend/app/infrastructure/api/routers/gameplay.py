@@ -1,9 +1,14 @@
 """Gameplay router."""
 from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.infrastructure.db.session import get_db
+
+from app.application.use_cases.advance_question import AdvanceQuestionUseCase
+from app.application.use_cases.get_current_question import GetCurrentQuestionUseCase
+from app.application.use_cases.submit_answer import SubmitAnswerUseCase
+from app.domain.errors import ConflictError, ForbiddenError, InvalidStateError, NotFoundError
 from app.infrastructure.db.repositories import (
     SQLAlchemyAnswerRepository,
     SQLAlchemyOptionRepository,
@@ -12,9 +17,7 @@ from app.infrastructure.db.repositories import (
     SQLAlchemyTriviaQuestionRepository,
     SQLAlchemyTriviaRepository,
 )
-from app.application.use_cases.get_current_question import GetCurrentQuestionUseCase
-from app.application.use_cases.submit_answer import SubmitAnswerUseCase
-from app.domain.errors import ConflictError, InvalidStateError, NotFoundError
+from app.infrastructure.db.session import get_db
 
 router = APIRouter(prefix="/trivias", tags=["gameplay"])
 
@@ -23,6 +26,11 @@ class SubmitAnswerRequest(BaseModel):
     """Submit answer request."""
     user_id: UUID
     selected_option_id: UUID
+
+
+class AdvanceQuestionRequest(BaseModel):
+    """Advance question request."""
+    admin_user_id: UUID
 
 
 def get_get_current_question_use_case(
@@ -147,6 +155,60 @@ async def submit_answer(
             detail=str(e),
         ) from e
     except ConflictError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e),
+        ) from e
+
+
+def get_advance_question_use_case(
+    db: AsyncSession = Depends(get_db),
+) -> AdvanceQuestionUseCase:
+    """Dependency to get AdvanceQuestionUseCase."""
+    trivia_repo = SQLAlchemyTriviaRepository(db)
+    trivia_question_repo = SQLAlchemyTriviaQuestionRepository(db)
+    return AdvanceQuestionUseCase(
+        trivia_repo,
+        trivia_question_repo,
+    )
+
+
+@router.post("/{trivia_id}/next-question")
+async def advance_question(
+    trivia_id: UUID,
+    request: AdvanceQuestionRequest,
+    use_case: AdvanceQuestionUseCase = Depends(get_advance_question_use_case),
+):
+    """
+    Advance to the next question or finish the trivia.
+
+    Args:
+        trivia_id: The trivia ID
+        request: Advance question request with admin_user_id
+        use_case: Advance question use case
+
+    Returns:
+        Advance question result DTO with updated trivia state
+    """
+    try:
+        result = await use_case.execute(trivia_id, request.admin_user_id)
+        return {
+            "trivia_id": str(result.trivia_id),
+            "status": result.status.value,
+            "current_question_index": result.current_question_index,
+            "total_questions": result.total_questions,
+        }
+    except NotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        ) from e
+    except ForbiddenError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(e),
+        ) from e
+    except InvalidStateError as e:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(e),

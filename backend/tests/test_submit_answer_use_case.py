@@ -1,21 +1,23 @@
 """Tests for SubmitAnswerUseCase."""
-import pytest
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
+
+import pytest
+
 from app.application.use_cases.submit_answer import SubmitAnswerUseCase
-from app.domain.entities.trivia import Trivia, TriviaStatus
-from app.domain.entities.participation import Participation, ParticipationStatus
-from app.domain.entities.trivia_question import TriviaQuestion
-from app.domain.entities.question import Question, QuestionDifficulty
-from app.domain.entities.option import Option
 from app.domain.entities.answer import Answer
-from app.domain.ports.trivia_repository import TriviaRepositoryPort
-from app.domain.ports.participation_repository import ParticipationRepositoryPort
-from app.domain.ports.trivia_question_repository import TriviaQuestionRepositoryPort
-from app.domain.ports.question_repository import QuestionRepositoryPort
-from app.domain.ports.option_repository import OptionRepositoryPort
+from app.domain.entities.option import Option
+from app.domain.entities.participation import Participation, ParticipationStatus
+from app.domain.entities.question import Question, QuestionDifficulty
+from app.domain.entities.trivia import Trivia, TriviaStatus
+from app.domain.entities.trivia_question import TriviaQuestion
+from app.domain.errors import ConflictError
 from app.domain.ports.answer_repository import AnswerRepositoryPort
-from app.domain.errors import ConflictError, InvalidStateError, NotFoundError
+from app.domain.ports.option_repository import OptionRepositoryPort
+from app.domain.ports.participation_repository import ParticipationRepositoryPort
+from app.domain.ports.question_repository import QuestionRepositoryPort
+from app.domain.ports.trivia_question_repository import TriviaQuestionRepositoryPort
+from app.domain.ports.trivia_repository import TriviaRepositoryPort
 
 
 class InMemoryTriviaRepository(TriviaRepositoryPort):

@@ -1,10 +1,11 @@
 """Submit answer use case."""
 import uuid
-from datetime import UTC, datetime, timedelta
-from typing import Optional
+from datetime import UTC, datetime
 from uuid import UUID
+
 from app.application.dtos.submit_answer_dto import SubmitAnswerResultDTO
 from app.domain.entities.answer import Answer
+from app.domain.enums.difficulty import Difficulty
 from app.domain.enums.trivia_status import TriviaStatus
 from app.domain.errors import ConflictError, InvalidStateError, NotFoundError
 from app.domain.ports.answer_repository import AnswerRepositoryPort
@@ -13,7 +14,6 @@ from app.domain.ports.participation_repository import ParticipationRepositoryPor
 from app.domain.ports.question_repository import QuestionRepositoryPort
 from app.domain.ports.trivia_question_repository import TriviaQuestionRepositoryPort
 from app.domain.ports.trivia_repository import TriviaRepositoryPort
-from app.domain.enums.difficulty import Difficulty
 from app.domain.services.score_service import ScoreService
 
 
@@ -41,7 +41,7 @@ class SubmitAnswerUseCase:
         trivia_id: UUID,
         user_id: UUID,
         selected_option_id: UUID,
-        answered_at: Optional[datetime] = None,
+        answered_at: datetime | None = None,
     ) -> SubmitAnswerResultDTO:
         """
         Execute submit answer use case.
