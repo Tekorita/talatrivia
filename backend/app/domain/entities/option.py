@@ -1,5 +1,5 @@
 """Option domain entity."""
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Optional
 from uuid import UUID
 
@@ -19,5 +19,5 @@ class Option:
         self.question_id = question_id
         self.text = text
         self.is_correct = is_correct
-        self.created_at = created_at or datetime.utcnow()
+        self.created_at = created_at or datetime.now(UTC)
 

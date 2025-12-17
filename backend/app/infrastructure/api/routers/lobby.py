@@ -14,10 +14,9 @@ from app.application.use_cases import (
     StartTriviaUseCase,
 )
 from app.domain.errors import (
-    NotFoundError,
     ForbiddenError,
     InvalidStateError,
-    ConflictError,
+    NotFoundError,
 )
 
 router = APIRouter(prefix="/trivias", tags=["lobby"])
@@ -94,12 +93,12 @@ async def join_trivia(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
-        )
+        ) from e
     except InvalidStateError as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(e),
-        )
+        ) from e
 
 
 @router.post("/{trivia_id}/ready")
@@ -129,12 +128,12 @@ async def set_ready(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
-        )
+        ) from e
     except InvalidStateError as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(e),
-        )
+        ) from e
 
 
 @router.post("/{trivia_id}/start")
@@ -171,7 +170,7 @@ async def start_trivia(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=str(e),
-        )
+        ) from e
     except InvalidStateError as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

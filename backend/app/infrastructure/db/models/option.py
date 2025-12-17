@@ -1,5 +1,5 @@
 """Option SQLAlchemy model."""
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, UniqueConstraint, Index
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime

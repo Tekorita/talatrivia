@@ -1,6 +1,7 @@
 """Start trivia use case."""
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
+
 from app.application.dtos.start_trivia_dto import StartTriviaDTO
 from app.domain.entities.participation import ParticipationStatus
 from app.domain.enums.trivia_status import TriviaStatus
@@ -21,9 +22,9 @@ class StartTriviaUseCase:
         self.participation_repository = participation_repository
     
     async def execute(
-        self, 
-        trivia_id: UUID, 
-        admin_user_id: UUID
+        self,
+        trivia_id: UUID,
+        admin_user_id: UUID,
     ) -> StartTriviaDTO:
         """
         Execute start trivia use case.
@@ -60,7 +61,7 @@ class StartTriviaUseCase:
         # Check at least one player is READY
         participations = await self.participation_repository.list_by_trivia(trivia_id)
         ready_count = sum(
-            1 for p in participations 
+            1 for p in participations
             if p.status == ParticipationStatus.READY
         )
         
@@ -70,7 +71,7 @@ class StartTriviaUseCase:
             )
         
         # Update trivia status
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         trivia.status = TriviaStatus.IN_PROGRESS
         trivia.started_at = now
         trivia.current_question_index = 0
