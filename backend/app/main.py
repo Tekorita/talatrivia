@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.core.logging import setup_logging
-from app.infrastructure.api.routers import gameplay, health, lobby
+from app.infrastructure.api.routers import auth, gameplay, health, lobby
 
 # Setup logging
 logger = setup_logging()
@@ -30,6 +30,7 @@ app = FastAPI(
 
 # Register routers
 app.include_router(health.router)
+app.include_router(auth.router)
 app.include_router(lobby.router)
 app.include_router(gameplay.router)
 

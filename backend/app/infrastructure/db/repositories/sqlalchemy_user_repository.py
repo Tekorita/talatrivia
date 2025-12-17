@@ -25,4 +25,14 @@ class SQLAlchemyUserRepository(UserRepositoryPort):
         if not orm_model:
             return None
         return to_domain(orm_model)
+    
+    async def get_by_email(self, email: str) -> User | None:
+        """Get user by email."""
+        result = await self.session.execute(
+            select(UserModel).where(UserModel.email == email)
+        )
+        orm_model = result.scalar_one_or_none()
+        if not orm_model:
+            return None
+        return to_domain(orm_model)
 

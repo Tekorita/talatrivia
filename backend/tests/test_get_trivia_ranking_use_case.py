@@ -68,6 +68,12 @@ class InMemoryUserRepository(UserRepositoryPort):
 
     async def get_by_id(self, user_id: UUID) -> User | None:
         return self.users.get(user_id)
+    
+    async def get_by_email(self, email: str) -> User | None:
+        for user in self.users.values():
+            if user.email == email:
+                return user
+        return None
 
 
 @pytest.mark.asyncio

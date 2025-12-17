@@ -20,4 +20,17 @@ class UserRepositoryPort(ABC):
             User entity or None if not found
         """
         pass
+    
+    @abstractmethod
+    async def get_by_email(self, email: str) -> User | None:
+        """
+        Get user by email.
+        
+        Args:
+            email: The user email
+            
+        Returns:
+            User entity or None if not found
+        """
+        pass
 
