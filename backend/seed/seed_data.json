@@ -1,0 +1,734 @@
+{
+  "users": [
+    {
+      "name": "Admin",
+      "email": "admin@test.com",
+      "role": "ADMIN",
+      "password_plain": "123"
+    },
+    {
+      "name": "Jugador 1",
+      "email": "player1@test.com",
+      "role": "PLAYER",
+      "password_plain": "123"
+    },
+    {
+      "name": "Jugador 2",
+      "email": "player2@test.com",
+      "role": "PLAYER",
+      "password_plain": "123"
+    }
+  ],
+  "trivias": [
+    {
+      "title": "¿Qué tanto conoces a Chile?",
+      "description": "Pon a prueba tu conocimiento sobre regiones, ciudades, cultura y datos generales de Chile.",
+      "players_emails": ["player1@test.com", "player2@test.com"],
+      "status": "LOBBY"
+    },
+    {
+      "title": "Vuelta al mundo: Países y capitales",
+      "description": "Demuestra cuánto sabes de países, capitales, banderas y geografía mundial.",
+      "players_emails": ["player1@test.com", "player2@test.com"],
+      "status": "LOBBY"
+    },
+    {
+      "title": "Pop & Rock: Bandas y canciones",
+      "description": "Preguntas sobre bandas icónicas de pop y rock, álbumes, canciones y curiosidades.",
+      "players_emails": ["player1@test.com", "player2@test.com"],
+      "status": "LOBBY"
+    }
+  ],
+  "questions": [
+    {
+      "trivia_title": "¿Qué tanto conoces a Chile?",
+      "text": "¿Cuál es la capital de Chile?",
+      "difficulty": "EASY",
+      "options": [
+        {
+          "text": "Santiago",
+          "is_correct": true
+        },
+        {
+          "text": "Valparaíso",
+          "is_correct": false
+        },
+        {
+          "text": "Concepción",
+          "is_correct": false
+        },
+        {
+          "text": "La Serena",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "¿Qué tanto conoces a Chile?",
+      "text": "¿Cuántas regiones tiene Chile?",
+      "difficulty": "EASY",
+      "options": [
+        {
+          "text": "16",
+          "is_correct": true
+        },
+        {
+          "text": "15",
+          "is_correct": false
+        },
+        {
+          "text": "14",
+          "is_correct": false
+        },
+        {
+          "text": "17",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "¿Qué tanto conoces a Chile?",
+      "text": "¿Cuál es el desierto más árido del mundo, ubicado en Chile?",
+      "difficulty": "EASY",
+      "options": [
+        {
+          "text": "Desierto de Atacama",
+          "is_correct": true
+        },
+        {
+          "text": "Desierto de Sahara",
+          "is_correct": false
+        },
+        {
+          "text": "Desierto de Gobi",
+          "is_correct": false
+        },
+        {
+          "text": "Desierto de Kalahari",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "¿Qué tanto conoces a Chile?",
+      "text": "¿Cuál es la moneda oficial de Chile?",
+      "difficulty": "EASY",
+      "options": [
+        {
+          "text": "Peso chileno",
+          "is_correct": true
+        },
+        {
+          "text": "Sol",
+          "is_correct": false
+        },
+        {
+          "text": "Peso argentino",
+          "is_correct": false
+        },
+        {
+          "text": "Real",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "¿Qué tanto conoces a Chile?",
+      "text": "¿Cuál es la capital de la Región de Valparaíso?",
+      "difficulty": "MEDIUM",
+      "options": [
+        {
+          "text": "Valparaíso",
+          "is_correct": true
+        },
+        {
+          "text": "Viña del Mar",
+          "is_correct": false
+        },
+        {
+          "text": "Quilpué",
+          "is_correct": false
+        },
+        {
+          "text": "San Antonio",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "¿Qué tanto conoces a Chile?",
+      "text": "¿En qué región de Chile se encuentra la Isla de Pascua?",
+      "difficulty": "MEDIUM",
+      "options": [
+        {
+          "text": "Región de Valparaíso",
+          "is_correct": true
+        },
+        {
+          "text": "Región de Los Lagos",
+          "is_correct": false
+        },
+        {
+          "text": "Región de Arica y Parinacota",
+          "is_correct": false
+        },
+        {
+          "text": "Región de Magallanes",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "¿Qué tanto conoces a Chile?",
+      "text": "¿Cuál es el volcán activo más alto de Chile?",
+      "difficulty": "MEDIUM",
+      "options": [
+        {
+          "text": "Volcán Llullaillaco",
+          "is_correct": true
+        },
+        {
+          "text": "Volcán Villarrica",
+          "is_correct": false
+        },
+        {
+          "text": "Volcán Osorno",
+          "is_correct": false
+        },
+        {
+          "text": "Volcán Calbuco",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "¿Qué tanto conoces a Chile?",
+      "text": "¿Cuál es el nombre del estrecho que separa Chile continental de la Isla Grande de Tierra del Fuego?",
+      "difficulty": "MEDIUM",
+      "options": [
+        {
+          "text": "Estrecho de Magallanes",
+          "is_correct": true
+        },
+        {
+          "text": "Estrecho de Drake",
+          "is_correct": false
+        },
+        {
+          "text": "Canal de Beagle",
+          "is_correct": false
+        },
+        {
+          "text": "Estrecho de Le Maire",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "¿Qué tanto conoces a Chile?",
+      "text": "¿Cuál es el nombre del poeta chileno ganador del Premio Nobel de Literatura en 1971?",
+      "difficulty": "HARD",
+      "options": [
+        {
+          "text": "Pablo Neruda",
+          "is_correct": true
+        },
+        {
+          "text": "Gabriela Mistral",
+          "is_correct": false
+        },
+        {
+          "text": "Vicente Huidobro",
+          "is_correct": false
+        },
+        {
+          "text": "Nicanor Parra",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "¿Qué tanto conoces a Chile?",
+      "text": "¿Cuál es la altura aproximada del cerro Aconcagua, el punto más alto de la Cordillera de los Andes, ubicado en la frontera entre Chile y Argentina?",
+      "difficulty": "HARD",
+      "options": [
+        {
+          "text": "6.961 metros",
+          "is_correct": true
+        },
+        {
+          "text": "5.895 metros",
+          "is_correct": false
+        },
+        {
+          "text": "7.245 metros",
+          "is_correct": false
+        },
+        {
+          "text": "6.542 metros",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "Vuelta al mundo: Países y capitales",
+      "text": "¿Cuál es la capital de Francia?",
+      "difficulty": "EASY",
+      "options": [
+        {
+          "text": "París",
+          "is_correct": true
+        },
+        {
+          "text": "Lyon",
+          "is_correct": false
+        },
+        {
+          "text": "Marsella",
+          "is_correct": false
+        },
+        {
+          "text": "Toulouse",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "Vuelta al mundo: Países y capitales",
+      "text": "¿Cuál es la capital de Japón?",
+      "difficulty": "EASY",
+      "options": [
+        {
+          "text": "Tokio",
+          "is_correct": true
+        },
+        {
+          "text": "Osaka",
+          "is_correct": false
+        },
+        {
+          "text": "Kioto",
+          "is_correct": false
+        },
+        {
+          "text": "Yokohama",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "Vuelta al mundo: Países y capitales",
+      "text": "¿En qué continente se encuentra Egipto?",
+      "difficulty": "EASY",
+      "options": [
+        {
+          "text": "África",
+          "is_correct": true
+        },
+        {
+          "text": "Asia",
+          "is_correct": false
+        },
+        {
+          "text": "Europa",
+          "is_correct": false
+        },
+        {
+          "text": "Oceanía",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "Vuelta al mundo: Países y capitales",
+      "text": "¿Cuál es la capital de Australia?",
+      "difficulty": "EASY",
+      "options": [
+        {
+          "text": "Canberra",
+          "is_correct": true
+        },
+        {
+          "text": "Sídney",
+          "is_correct": false
+        },
+        {
+          "text": "Melbourne",
+          "is_correct": false
+        },
+        {
+          "text": "Brisbane",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "Vuelta al mundo: Países y capitales",
+      "text": "¿Cuál es la capital de Brasil?",
+      "difficulty": "MEDIUM",
+      "options": [
+        {
+          "text": "Brasilia",
+          "is_correct": true
+        },
+        {
+          "text": "São Paulo",
+          "is_correct": false
+        },
+        {
+          "text": "Río de Janeiro",
+          "is_correct": false
+        },
+        {
+          "text": "Belo Horizonte",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "Vuelta al mundo: Países y capitales",
+      "text": "¿Cuál es el país más grande del mundo por superficie?",
+      "difficulty": "MEDIUM",
+      "options": [
+        {
+          "text": "Rusia",
+          "is_correct": true
+        },
+        {
+          "text": "Canadá",
+          "is_correct": false
+        },
+        {
+          "text": "China",
+          "is_correct": false
+        },
+        {
+          "text": "Estados Unidos",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "Vuelta al mundo: Países y capitales",
+      "text": "¿Cuál es la capital de Turquía?",
+      "difficulty": "MEDIUM",
+      "options": [
+        {
+          "text": "Ankara",
+          "is_correct": true
+        },
+        {
+          "text": "Estambul",
+          "is_correct": false
+        },
+        {
+          "text": "Esmirna",
+          "is_correct": false
+        },
+        {
+          "text": "Bursa",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "Vuelta al mundo: Países y capitales",
+      "text": "¿Qué país tiene una bandera con una hoja de arce roja?",
+      "difficulty": "MEDIUM",
+      "options": [
+        {
+          "text": "Canadá",
+          "is_correct": true
+        },
+        {
+          "text": "Estados Unidos",
+          "is_correct": false
+        },
+        {
+          "text": "Reino Unido",
+          "is_correct": false
+        },
+        {
+          "text": "Australia",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "Vuelta al mundo: Países y capitales",
+      "text": "¿Cuál es la capital de Myanmar (Birmania)?",
+      "difficulty": "HARD",
+      "options": [
+        {
+          "text": "Naypyidaw",
+          "is_correct": true
+        },
+        {
+          "text": "Yangón",
+          "is_correct": false
+        },
+        {
+          "text": "Mandalay",
+          "is_correct": false
+        },
+        {
+          "text": "Bangkok",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "Vuelta al mundo: Países y capitales",
+      "text": "¿Qué país tiene una bandera con un círculo rojo sobre fondo blanco?",
+      "difficulty": "HARD",
+      "options": [
+        {
+          "text": "Japón",
+          "is_correct": true
+        },
+        {
+          "text": "Corea del Sur",
+          "is_correct": false
+        },
+        {
+          "text": "China",
+          "is_correct": false
+        },
+        {
+          "text": "Bangladesh",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "Pop & Rock: Bandas y canciones",
+      "text": "¿Qué banda británica lanzó el álbum 'Abbey Road' en 1969?",
+      "difficulty": "EASY",
+      "options": [
+        {
+          "text": "The Beatles",
+          "is_correct": true
+        },
+        {
+          "text": "The Rolling Stones",
+          "is_correct": false
+        },
+        {
+          "text": "Led Zeppelin",
+          "is_correct": false
+        },
+        {
+          "text": "The Who",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "Pop & Rock: Bandas y canciones",
+      "text": "¿Qué cantante pop es conocida como 'La Reina del Pop'?",
+      "difficulty": "EASY",
+      "options": [
+        {
+          "text": "Madonna",
+          "is_correct": true
+        },
+        {
+          "text": "Britney Spears",
+          "is_correct": false
+        },
+        {
+          "text": "Lady Gaga",
+          "is_correct": false
+        },
+        {
+          "text": "Beyoncé",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "Pop & Rock: Bandas y canciones",
+      "text": "¿Qué banda de rock lanzó la canción 'Bohemian Rhapsody'?",
+      "difficulty": "EASY",
+      "options": [
+        {
+          "text": "Queen",
+          "is_correct": true
+        },
+        {
+          "text": "Pink Floyd",
+          "is_correct": false
+        },
+        {
+          "text": "The Doors",
+          "is_correct": false
+        },
+        {
+          "text": "AC/DC",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "Pop & Rock: Bandas y canciones",
+      "text": "¿Qué cantante pop es conocido por su álbum 'Thriller' de 1982?",
+      "difficulty": "EASY",
+      "options": [
+        {
+          "text": "Michael Jackson",
+          "is_correct": true
+        },
+        {
+          "text": "Prince",
+          "is_correct": false
+        },
+        {
+          "text": "Stevie Wonder",
+          "is_correct": false
+        },
+        {
+          "text": "Marvin Gaye",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "Pop & Rock: Bandas y canciones",
+      "text": "¿Qué banda de rock alternativo lanzó el álbum 'Nevermind' en 1991?",
+      "difficulty": "MEDIUM",
+      "options": [
+        {
+          "text": "Nirvana",
+          "is_correct": true
+        },
+        {
+          "text": "Pearl Jam",
+          "is_correct": false
+        },
+        {
+          "text": "Soundgarden",
+          "is_correct": false
+        },
+        {
+          "text": "Alice in Chains",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "Pop & Rock: Bandas y canciones",
+      "text": "¿Qué banda de rock lanzó el álbum 'The Dark Side of the Moon'?",
+      "difficulty": "MEDIUM",
+      "options": [
+        {
+          "text": "Pink Floyd",
+          "is_correct": true
+        },
+        {
+          "text": "Led Zeppelin",
+          "is_correct": false
+        },
+        {
+          "text": "The Beatles",
+          "is_correct": false
+        },
+        {
+          "text": "The Rolling Stones",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "Pop & Rock: Bandas y canciones",
+      "text": "¿Qué cantante pop es conocida por su canción 'Bad Romance'?",
+      "difficulty": "MEDIUM",
+      "options": [
+        {
+          "text": "Lady Gaga",
+          "is_correct": true
+        },
+        {
+          "text": "Katy Perry",
+          "is_correct": false
+        },
+        {
+          "text": "Rihanna",
+          "is_correct": false
+        },
+        {
+          "text": "Ariana Grande",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "Pop & Rock: Bandas y canciones",
+      "text": "¿Qué banda de rock lanzó la canción 'Stairway to Heaven'?",
+      "difficulty": "MEDIUM",
+      "options": [
+        {
+          "text": "Led Zeppelin",
+          "is_correct": true
+        },
+        {
+          "text": "The Who",
+          "is_correct": false
+        },
+        {
+          "text": "Deep Purple",
+          "is_correct": false
+        },
+        {
+          "text": "Black Sabbath",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "Pop & Rock: Bandas y canciones",
+      "text": "¿En qué año se formó la banda The Beatles?",
+      "difficulty": "HARD",
+      "options": [
+        {
+          "text": "1960",
+          "is_correct": true
+        },
+        {
+          "text": "1958",
+          "is_correct": false
+        },
+        {
+          "text": "1962",
+          "is_correct": false
+        },
+        {
+          "text": "1964",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "trivia_title": "Pop & Rock: Bandas y canciones",
+      "text": "¿Qué álbum de Pink Floyd tiene una portada con un prisma refractando luz?",
+      "difficulty": "HARD",
+      "options": [
+        {
+          "text": "The Dark Side of the Moon",
+          "is_correct": true
+        },
+        {
+          "text": "The Wall",
+          "is_correct": false
+        },
+        {
+          "text": "Wish You Were Here",
+          "is_correct": false
+        },
+        {
+          "text": "Animals",
+          "is_correct": false
+        }
+      ]
+    }
+  ]
+}
