@@ -1,5 +1,15 @@
 """API routers."""
-from app.infrastructure.api.routers import auth, gameplay, health, lobby
+from app.infrastructure.api.routers import (
+    admin,
+    auth,
+    gameplay,
+    health,
+    lobby,
+    play,
+    questions,
+    trivias,
+    users,
+)
 
-__all__ = ["auth", "gameplay", "health", "lobby"]
+__all__ = ["admin", "auth", "gameplay", "health", "lobby", "play", "questions", "trivias", "users"]
 
