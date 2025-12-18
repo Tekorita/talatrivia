@@ -25,6 +25,7 @@ class ParticipationModel(Base):
     joined_at = Column(DateTime, nullable=True)
     ready_at = Column(DateTime, nullable=True)
     finished_at = Column(DateTime, nullable=True)
+    last_seen_at = Column(DateTime, nullable=True)
     
     # Relationships
     trivia = relationship("TriviaModel", back_populates="participations")

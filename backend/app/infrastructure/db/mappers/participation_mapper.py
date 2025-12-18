@@ -1,6 +1,18 @@
 """Participation mapper."""
+from datetime import UTC, datetime
+
 from app.domain.entities.participation import Participation, ParticipationStatus
 from app.infrastructure.db.models.participation import ParticipationModel
+
+
+def _to_naive_dt(dt: datetime | None) -> datetime | None:
+    """Convert timezone-aware datetime to naive UTC datetime."""
+    if dt is None:
+        return None
+    if dt.tzinfo is not None:
+        # Convert to UTC and remove timezone info
+        return dt.astimezone(UTC).replace(tzinfo=None)
+    return dt
 
 
 def to_domain(orm_model: ParticipationModel) -> Participation:
@@ -14,5 +26,6 @@ def to_domain(orm_model: ParticipationModel) -> Participation:
         joined_at=orm_model.joined_at,
         ready_at=orm_model.ready_at,
         finished_at=orm_model.finished_at,
+        last_seen_at=orm_model.last_seen_at,
     )
 

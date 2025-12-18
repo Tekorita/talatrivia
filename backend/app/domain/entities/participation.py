@@ -26,6 +26,7 @@ class Participation:
         joined_at: datetime | None = None,
         ready_at: datetime | None = None,
         finished_at: datetime | None = None,
+        last_seen_at: datetime | None = None,
     ):
         self.id = id
         self.trivia_id = trivia_id
@@ -35,4 +36,5 @@ class Participation:
         self.joined_at = joined_at
         self.ready_at = ready_at
         self.finished_at = finished_at
+        self.last_seen_at = last_seen_at
 

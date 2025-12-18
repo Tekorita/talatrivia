@@ -5,7 +5,7 @@ from uuid import UUID
 from app.application.dtos.start_trivia_dto import StartTriviaDTO
 from app.domain.entities.participation import ParticipationStatus
 from app.domain.enums.trivia_status import TriviaStatus
-from app.domain.errors import ForbiddenError, InvalidStateError, NotFoundError
+from app.domain.errors import ConflictError, ForbiddenError, InvalidStateError, NotFoundError
 from app.domain.ports.participation_repository import ParticipationRepositoryPort
 from app.domain.ports.trivia_repository import TriviaRepositoryPort
 
@@ -58,16 +58,33 @@ class StartTriviaUseCase:
                 f"Cannot start trivia in status {trivia.status.value}"
             )
         
-        # Check at least one player is READY
+        # Get all participations (assigned players)
         participations = await self.participation_repository.list_by_trivia(trivia_id)
+        assigned_count = len(participations)
+        
+        if assigned_count == 0:
+            raise InvalidStateError(
+                "Cannot start trivia: no players assigned"
+            )
+        
+        # Count present and ready players
+        present_count = sum(1 for p in participations if p.joined_at is not None)
         ready_count = sum(
             1 for p in participations
             if p.status == ParticipationStatus.READY
         )
         
-        if ready_count == 0:
-            raise InvalidStateError(
-                "Cannot start trivia: at least one player must be READY"
+        # Validate all assigned players are present and ready
+        if present_count != assigned_count:
+            raise ConflictError(
+                f"Cannot start trivia: {present_count} players present, but {assigned_count} assigned. "
+                f"All assigned players must be present to start."
+            )
+        
+        if ready_count != assigned_count:
+            raise ConflictError(
+                f"Cannot start trivia: {ready_count} players ready, but {assigned_count} assigned. "
+                f"All assigned players must be ready to start."
             )
         
         # Update trivia status
