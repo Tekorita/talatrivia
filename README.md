@@ -1,95 +1,106 @@
 # TalaTrivia
 
-Monorepo para el juego de trivia TalaTrivia, construido con FastAPI (backend) y Arquitectura Hexagonal.
+Monorepo for the TalaTrivia trivia game, built with FastAPI (backend) and Hexagonal Architecture.
 
-## Estructura del Proyecto
+## Project Structure
 
 ```
 talatrivia/
 ├── backend/              # Backend API (FastAPI + PostgreSQL)
 │   ├── app/
-│   │   ├── main.py                 # Punto de entrada FastAPI
-│   │   ├── core/                   # Configuración y utilidades core
-│   │   ├── domain/                 # Capa de dominio (entidades, puertos)
-│   │   ├── application/            # Casos de uso
-│   │   └── infrastructure/         # Adaptadores (DB, API)
-│   ├── alembic/                    # Migraciones de base de datos
-│   ├── tests/                      # Tests (preparado para pytest)
+│   │   ├── main.py                 # FastAPI entry point
+│   │   ├── core/                   # Core configuration and utilities
+│   │   ├── domain/                 # Domain layer (entities, ports)
+│   │   ├── application/            # Use cases
+│   │   └── infrastructure/         # Adapters (DB, API)
+│   ├── alembic/                    # Database migrations
+│   ├── tests/                      # Tests (pytest ready)
 │   ├── Dockerfile
 │   └── requirements.txt
-├── frontend/            # Frontend (a implementar)
-├── docker-compose-local.yml  # Orquestación de servicios
+├── frontend/            # Frontend (React + TypeScript)
+├── docker-compose-local.yml  # Service orchestration
 └── CHANGELOG.md
 ```
 
-## Requisitos
+## Requirements
 
 - Python 3.12
-- Docker y Docker Compose
-- PostgreSQL 15 o 16
+- Docker and Docker Compose
+- PostgreSQL 15 or 16
 
-## Configuración Inicial
+## Initial Setup
 
-1. Configura las variables de entorno del backend:
+### Steps to Start the Project
 
-```bash
-cd backend
-cp .env.example .env
-# Ajusta las variables según tu entorno
-```
-
-2. Construye y levanta los servicios con Docker Compose (desde la raíz):
+**1. Start the project with Docker Compose (from the project root):**
 
 ```bash
 docker compose -f docker-compose-local.yml up --build
 ```
 
-3. Ejecuta las migraciones de Alembic:
+This command builds and starts all services (PostgreSQL, Backend, Frontend).
+
+**2. Run migrations and create tables:**
 
 ```bash
 docker compose -f docker-compose-local.yml exec backend alembic upgrade head
 ```
 
-4. Crea el usuario admin inicial:
+This command applies all Alembic migrations and creates the database tables.
+
+**3. Load initial data (users, trivias, questions):**
 
 ```bash
-docker compose -f docker-compose-local.yml exec backend python scripts/seed_admin.py
+docker compose -f docker-compose-local.yml exec backend python scripts/seed_db.py
 ```
 
-O alternativamente, usando PYTHONPATH:
+This command loads all initial data from `backend/seed/seed_data.json`.
 
-```bash
-docker compose -f docker-compose-local.yml exec backend sh -c "PYTHONPATH=/app python scripts/seed_admin.py"
-```
+### User Credentials
 
-El script usa las siguientes variables de entorno (configuradas en `docker-compose-local.yml`):
-- `ADMIN_EMAIL` (default: `admin@test.com`)
-- `ADMIN_PASSWORD` (default: `admin123`)
-- `ADMIN_NAME` (default: `Admin`)
+Once you've completed the steps above, you can log in with any of these users:
 
-Si el usuario admin ya existe, el script no hará nada.
+**Administrator:**
+- Email: `admin@test.com`
+- Password: `123`
 
-## Desarrollo Local (sin Docker)
+**Player 1:**
+- Email: `player1@test.com`
+- Password: `123`
 
-Para desarrollo local del backend con debug en VSCode/Cursor:
+**Player 2:**
+- Email: `player2@test.com`
+- Password: `123`
 
-1. Asegúrate de tener PostgreSQL corriendo localmente
-2. Ajusta `DATABASE_URL` en `backend/.env` para apuntar a `localhost:5432`
-3. Instala las dependencias:
+### Ready to Use!
+
+**With these 3 steps, the project is completely configured and ready to use.** 
+
+- Frontend available at: `http://localhost:3000`
+- Backend API available at: `http://localhost:8000`
+- API documentation: `http://localhost:8000/docs`
+
+## Local Development (without Docker)
+
+For local backend development with debug in VSCode/Cursor:
+
+1. Make sure PostgreSQL is running locally
+2. Adjust `DATABASE_URL` in `backend/.env` to point to `localhost:5432`
+3. Install dependencies:
 
 ```bash
 cd backend
 pip install -r requirements.txt
 ```
 
-4. Ejecuta las migraciones:
+4. Run migrations:
 
 ```bash
 cd backend
 alembic upgrade head
 ```
 
-5. Usa la configuración de debug en `backend/.vscode/launch.json` para correr la aplicación
+5. Use the debug configuration in `backend/.vscode/launch.json` to run the application
 
 ## Backend
 
@@ -121,70 +132,47 @@ alembic upgrade head
   - Body: `{ "user_id": "uuid", "selected_option_id": "uuid" }`
   - Returns: Answer result with correctness, earned points, and total score
 
-### Arquitectura
+### Architecture
 
-El backend sigue Arquitectura Hexagonal (Ports & Adapters) y principios SOLID:
+The backend follows Hexagonal Architecture (Ports & Adapters) and SOLID principles:
 
-- **Domain**: Entidades de dominio puras (sin dependencias de infraestructura)
-- **Application**: Casos de uso que orquestan la lógica de negocio
-- **Infrastructure**: Adaptadores para base de datos y API
+- **Domain**: Pure domain entities (no infrastructure dependencies)
+- **Application**: Use cases that orchestrate business logic
+- **Infrastructure**: Adapters for database and API
 
-### Migraciones
+### Migrations
 
-Para crear una nueva migración:
+To create a new migration:
 
 ```bash
-docker compose -f docker-compose-local.yml exec backend alembic revision --autogenerate -m "descripción"
+docker compose -f docker-compose-local.yml exec backend alembic revision --autogenerate -m "description"
 ```
 
-Para aplicar migraciones:
+To apply migrations:
 
 ```bash
 docker compose -f docker-compose-local.yml exec backend alembic upgrade head
 ```
 
-## Autenticación
+## Authentication
 
-El sistema usa autenticación simple con email y password (sin JWT por ahora, pero preparado para agregarlo después).
+The system uses simple email and password authentication. Users are created automatically when running the seed script (`scripts/seed_db.py`).
 
-### Crear Usuario Admin
-
-Para crear el usuario admin inicial, ejecuta:
-
-```bash
-docker compose -f docker-compose-local.yml exec backend python scripts/seed_admin.py
-```
-
-Esto creará un usuario admin con las credenciales configuradas en `docker-compose-local.yml`:
-- Email: `admin@test.com` (configurable via `ADMIN_EMAIL`)
-- Password: `admin123` (configurable via `ADMIN_PASSWORD`)
-- Name: `Admin` (configurable via `ADMIN_NAME`)
-
-El script es idempotente: si el usuario ya existe, no hará nada.
-
-### Probar Login
+### Test Login (API)
 
 ```bash
 curl -X POST http://localhost:8000/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "admin@test.com", "password": "admin123"}'
+  -d '{"email": "admin@test.com", "password": "123"}'
 ```
 
-## Pruebas de Endpoints de Lobby
+## Testing Lobby Endpoints
 
-Para probar los endpoints de lobby, primero necesitas crear datos de prueba en la base de datos:
+Test data (users and trivias) is created automatically when running `scripts/seed_db.py` (see Initial Setup section).
 
-1. **Crear usuarios y trivia en la base de datos** (puedes usar DBeaver o psql):
-   ```sql
-   -- Nota: Los usuarios ahora deben tener password_hash válido (usar el script seed_admin.py o generar hash con bcrypt)
-   -- Crear trivia (asumiendo que ya tienes un admin creado con el script seed_admin.py)
-   INSERT INTO trivias (id, title, description, created_by_user_id, status, current_question_index, created_at)
-   VALUES 
-     ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Test Trivia', 'Test Description', 
-      '<admin-user-id-from-seed>', 'LOBBY', 0, NOW());
-   ```
+If you need to create additional data manually, you can use DBeaver or psql:
 
-2. **Probar endpoints** (usando curl o Postman):
+2. **Test endpoints** (using curl or Postman):
    ```bash
    # Join trivia
    curl -X POST http://localhost:8000/trivias/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/join \
@@ -210,12 +198,12 @@ Para probar los endpoints de lobby, primero necesitas crear datos de prueba en l
      -d '{"user_id": "22222222-2222-2222-2222-222222222222", "selected_option_id": "option-uuid-here"}'
    ```
 
-## Tareas de VSCode/Cursor
+## VSCode/Cursor Tasks
 
-Desde el directorio `backend/`, puedes usar las tareas configuradas en `.vscode/tasks.json`:
+From the `backend/` directory, you can use the tasks configured in `.vscode/tasks.json`:
 
-- **Docker Compose: Up** - Levanta los servicios
-- **Docker Compose: Down** - Detiene los servicios
-- **Alembic: Upgrade Head** - Aplica migraciones
-- **Alembic: Create Migration** - Crea una nueva migración
+- **Docker Compose: Up** - Start services
+- **Docker Compose: Down** - Stop services
+- **Alembic: Upgrade Head** - Apply migrations
+- **Alembic: Create Migration** - Create a new migration
 
