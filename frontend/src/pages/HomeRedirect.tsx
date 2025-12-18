@@ -12,5 +12,5 @@ export default function HomeRedirect() {
     return <Navigate to="/admin" replace />;
   }
 
-  return <Navigate to="/player/lobby" replace />;
+  return <Navigate to="/play" replace />;
 }

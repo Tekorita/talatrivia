@@ -11,6 +11,7 @@ from app.application.use_cases import (
     StartTriviaUseCase,
 )
 from app.domain.errors import (
+    ConflictError,
     ForbiddenError,
     InvalidStateError,
     NotFoundError,
@@ -101,6 +102,14 @@ async def join_trivia(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(e),
         ) from e
+    except Exception as e:
+        # Catch any other unexpected errors
+        import traceback
+        error_detail = f"Internal server error: {str(e)}\n{traceback.format_exc()}"
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=error_detail,
+        ) from e
 
 
 @router.post("/{trivia_id}/ready")
@@ -173,9 +182,22 @@ async def start_trivia(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=str(e),
         ) from e
+    except ConflictError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e),
+        ) from e
     except InvalidStateError as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(e),
-        )
+        ) from e
+    except Exception as e:
+        # Catch any other unexpected errors
+        import traceback
+        error_detail = f"Internal server error: {str(e)}\n{traceback.format_exc()}"
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=error_detail,
+        ) from e
 
