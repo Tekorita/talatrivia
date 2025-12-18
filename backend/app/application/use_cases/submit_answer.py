@@ -1,4 +1,5 @@
 """Submit answer use case."""
+import logging
 import uuid
 from datetime import UTC, datetime
 from uuid import UUID
@@ -15,6 +16,8 @@ from app.domain.ports.question_repository import QuestionRepositoryPort
 from app.domain.ports.trivia_question_repository import TriviaQuestionRepositoryPort
 from app.domain.ports.trivia_repository import TriviaRepositoryPort
 from app.domain.services.score_service import ScoreService
+
+logger = logging.getLogger(__name__)
 
 
 class SubmitAnswerUseCase:
@@ -61,7 +64,12 @@ class SubmitAnswerUseCase:
             ConflictError: If answer already submitted
         """
         if answered_at is None:
-            answered_at = datetime.now(UTC)
+            # Create naive datetime (trivia.question_started_at is naive from DB)
+            answered_at = datetime.now(UTC).replace(tzinfo=None)
+        else:
+            # Ensure answered_at is naive (trivia.question_started_at is naive from DB)
+            if answered_at.tzinfo is not None:
+                answered_at = answered_at.replace(tzinfo=None)
 
         # Get trivia
         trivia = await self.trivia_repository.get_by_id(trivia_id)
@@ -116,13 +124,34 @@ class SubmitAnswerUseCase:
             )
 
         # Soft check: verify answer doesn't already exist
+        # This check happens before creating the answer to avoid unnecessary work
         existing_answer = await self.answer_repository.get_by_participation_and_trivia_question(
             participation.id, trivia_question.id
         )
         if existing_answer:
-            raise ConflictError("Answer already submitted for this question")
+            # Answer already exists - return the existing answer info
+            # This makes the operation idempotent
+            # Get the question to return proper DTO
+            question = await self.question_repository.get_by_id(trivia_question.question_id)
+            if not question:
+                raise NotFoundError(
+                    f"Question {trivia_question.question_id} not found"
+                )
+            
+            # Return the existing answer result (idempotent response)
+            return SubmitAnswerResultDTO(
+                trivia_id=trivia_id,
+                question_id=question.id,
+                selected_option_id=existing_answer.selected_option_id,
+                is_correct=existing_answer.is_correct,
+                earned_points=existing_answer.earned_points,
+                total_score=participation.score,  # Current score (may already include these points)
+                time_remaining_seconds=0,  # Time already expired
+            )
 
         # Calculate time remaining
+        # Note: Both answered_at and trivia.question_started_at should be naive
+        # answered_at is already converted to naive above if needed
         elapsed = (answered_at - trivia.question_started_at).total_seconds()
         remaining = trivia_question.time_limit_seconds - int(elapsed)
         time_remaining_seconds = max(0, remaining)
@@ -156,17 +185,35 @@ class SubmitAnswerUseCase:
         # Persist answer and update participation score in transaction
         # Note: Both operations use the same session, so they're in the same transaction
         try:
+            # Create answer (does flush, not commit)
             await self.answer_repository.create(answer)
-            # Update participation score
-            participation.score += earned_points
-            await self.participation_repository.update(participation)
+
+            # Recompute and persist score from answers (deterministic)
+            participation.score = await self.participation_repository.recompute_score(
+                trivia_id, user_id
+            )
         except ConflictError:
             # Re-raise ConflictError from repository
+            logger.warning(
+                "SubmitAnswer conflict: trivia=%s user=%s question=%s option=%s",
+                trivia_id,
+                user_id,
+                trivia_question.question_id,
+                selected_option_id,
+            )
             raise
         except Exception as e:
             # Check if it's a unique constraint violation (fallback)
             if "unique" in str(e).lower() or "duplicate" in str(e).lower():
                 raise ConflictError("Answer already submitted for this question") from e
+            logger.exception(
+                "SubmitAnswer error: trivia=%s user=%s question=%s option=%s err=%s",
+                trivia_id,
+                user_id,
+                trivia_question.question_id,
+                selected_option_id,
+                e,
+            )
             raise
 
         return SubmitAnswerResultDTO(

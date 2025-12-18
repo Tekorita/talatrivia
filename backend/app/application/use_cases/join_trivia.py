@@ -48,37 +48,42 @@ class JoinTriviaUseCase:
                 f"Cannot join trivia in status {trivia.status.value}"
             )
         
-        # Check if participation already exists
-        existing_participation = await self.participation_repository.get_by_trivia_and_user(
-            trivia_id, user_id
-        )
-        
-        if existing_participation:
-            # Idempotent: return existing participation if already joined/ready
-            if existing_participation.status in [
-                ParticipationStatus.INVITED,
-                ParticipationStatus.JOINED,
-                ParticipationStatus.READY,
-            ]:
-                return JoinTriviaDTO(
-                    trivia_id=trivia_id,
-                    participation_id=existing_participation.id,
-                    participation_status=existing_participation.status,
-                    trivia_status=trivia.status,
-                )
-        
         # If trivia is DRAFT, transition to LOBBY
         if trivia.status == TriviaStatus.DRAFT:
             trivia.status = TriviaStatus.LOBBY
             await self.trivia_repository.update(trivia)
         
-        # Create new participation
+        # Check if participation already exists
+        existing_participation = await self.participation_repository.get_by_trivia_and_user(
+            trivia_id, user_id
+        )
+        
+        now = datetime.now(UTC)
+        
+        if existing_participation:
+            # Update existing participation: set joined_at, ready, and last_seen_at
+            existing_participation.joined_at = now
+            existing_participation.status = ParticipationStatus.READY
+            existing_participation.ready_at = now
+            existing_participation.last_seen_at = now
+            await self.participation_repository.update(existing_participation)
+            
+            return JoinTriviaDTO(
+                trivia_id=trivia_id,
+                participation_id=existing_participation.id,
+                participation_status=existing_participation.status,
+                trivia_status=trivia.status,
+            )
+        
+        # Create new participation with ready status
         participation = Participation(
             id=uuid.uuid4(),  # Generate UUID
             trivia_id=trivia_id,
             user_id=user_id,
-            status=ParticipationStatus.JOINED,
-            joined_at=datetime.now(UTC),
+            status=ParticipationStatus.READY,
+            joined_at=now,
+            ready_at=now,
+            last_seen_at=now,
         )
         
         created_participation = await self.participation_repository.create(participation)

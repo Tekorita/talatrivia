@@ -86,11 +86,33 @@ class GetCurrentQuestionUseCase:
         options = await self.option_repository.list_by_question_id(question.id)
 
         # Calculate time remaining
+        # Note: trivia.question_started_at is naive UTC (from DB), so we need to make now naive UTC too
         if trivia.question_started_at:
-            elapsed = (datetime.now(UTC) - trivia.question_started_at).total_seconds()
+            # Convert current UTC time to naive UTC (same as stored in DB)
+            # Use the same conversion method as _to_naive_dt in trivia_mapper
+            now_aware = datetime.now(UTC)
+            now_naive = now_aware.astimezone(UTC).replace(tzinfo=None)
+            
+            # Calculate elapsed time
+            elapsed = (now_naive - trivia.question_started_at).total_seconds()
+            
+            # Safety check: if elapsed is negative, it means question_started_at is in the future
+            # This shouldn't happen but if it does, treat as 0 elapsed (question just started)
+            if elapsed < 0:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(
+                    f"❌ Negative elapsed time detected! question_started_at: {trivia.question_started_at}, "
+                    f"now_naive: {now_naive}, elapsed: {elapsed:.2f}s. "
+                    f"This suggests a timezone conversion issue. Treating as 0 elapsed."
+                )
+                elapsed = 0
+            
+            # Calculate remaining time
             remaining = trivia_question.time_limit_seconds - int(elapsed)
             time_remaining_seconds = max(0, remaining)
         else:
+            # If question_started_at is None, return full time limit
             time_remaining_seconds = trivia_question.time_limit_seconds
 
         # Build DTO without exposing is_correct or difficulty

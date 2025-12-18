@@ -11,7 +11,7 @@ from app.domain.entities.participation import Participation, ParticipationStatus
 from app.domain.entities.question import Question, QuestionDifficulty
 from app.domain.entities.trivia import Trivia, TriviaStatus
 from app.domain.entities.trivia_question import TriviaQuestion
-from app.domain.errors import ConflictError, InvalidStateError, NotFoundError
+from app.domain.errors import InvalidStateError, NotFoundError
 from app.domain.ports.answer_repository import AnswerRepositoryPort
 from app.domain.ports.option_repository import OptionRepositoryPort
 from app.domain.ports.participation_repository import ParticipationRepositoryPort
@@ -29,6 +29,13 @@ class InMemoryTriviaRepository(TriviaRepositoryPort):
     async def get_by_id(self, trivia_id: UUID):
         return self.trivias.get(trivia_id)
 
+    async def list_all(self):
+        return list(self.trivias.values())
+
+    async def create(self, trivia: Trivia):
+        self.trivias[trivia.id] = trivia
+        return trivia
+
     async def update(self, trivia: Trivia):
         self.trivias[trivia.id] = trivia
 
@@ -38,6 +45,7 @@ class InMemoryParticipationRepository(ParticipationRepositoryPort):
 
     def __init__(self):
         self.participations = {}
+        self.answers = {}  # (trivia_id, user_id) -> list of answers with earned_points
 
     async def get_by_trivia_and_user(self, trivia_id: UUID, user_id: UUID):
         key = (trivia_id, user_id)
@@ -58,6 +66,24 @@ class InMemoryParticipationRepository(ParticipationRepositoryPort):
             p for (tid, _), p in self.participations.items()
             if tid == trivia_id
         ]
+    
+    async def list_by_user(self, user_id: UUID):
+        return [
+            p for (_, uid), p in self.participations.items()
+            if uid == user_id
+        ]
+    
+    async def recompute_score(self, trivia_id: UUID, user_id: UUID) -> int:
+        """Recompute score from answers."""
+        key = (trivia_id, user_id)
+        answers = self.answers.get(key, [])
+        return sum(answer.get('earned_points', 0) for answer in answers)
+    
+    async def recompute_scores_for_trivia(self, trivia_id: UUID) -> None:
+        """Recompute scores for all participations in trivia."""
+        for (tid, uid), participation in self.participations.items():
+            if tid == trivia_id:
+                participation.score = await self.recompute_score(tid, uid)
 
 
 class InMemoryTriviaQuestionRepository(TriviaQuestionRepositoryPort):
@@ -86,6 +112,13 @@ class InMemoryQuestionRepository(QuestionRepositoryPort):
     async def get_by_id(self, question_id: UUID):
         return self.questions.get(question_id)
 
+    async def list_all(self):
+        return list(self.questions.values())
+
+    async def create(self, question: Question):
+        self.questions[question.id] = question
+        return question
+
 
 class InMemoryOptionRepository(OptionRepositoryPort):
     """In-memory option repository for testing."""
@@ -100,9 +133,10 @@ class InMemoryOptionRepository(OptionRepositoryPort):
 class InMemoryAnswerRepository(AnswerRepositoryPort):
     """In-memory answer repository for testing."""
 
-    def __init__(self):
+    def __init__(self, participation_repo=None):
         self.answers = {}  # (participation_id, trivia_question_id) -> Answer
         self._unique_violations = set()
+        self.participation_repo = participation_repo  # Reference to participation repo for score tracking
 
     async def get_by_participation_and_trivia_question(
         self, participation_id: UUID, trivia_question_id: UUID
@@ -117,6 +151,20 @@ class InMemoryAnswerRepository(AnswerRepositoryPort):
             raise ConflictError("Answer already submitted for this question")
         self.answers[key] = answer
         self._unique_violations.add(key)
+        
+        # Track answer for score recomputation
+        if self.participation_repo:
+            # Find participation to get trivia_id and user_id
+            for (tid, uid), participation in self.participation_repo.participations.items():
+                if participation.id == answer.participation_id:
+                    answer_key = (tid, uid)
+                    if answer_key not in self.participation_repo.answers:
+                        self.participation_repo.answers[answer_key] = []
+                    self.participation_repo.answers[answer_key].append({
+                        'earned_points': answer.earned_points
+                    })
+                    break
+        
         return answer
 
 
@@ -132,7 +180,7 @@ async def test_submit_answer_correct_within_time():
     participation_id = uuid4()
     trivia_question_id = uuid4()
 
-    started_at = datetime.now(UTC) - timedelta(seconds=5)
+    started_at = (datetime.now(UTC) - timedelta(seconds=5)).replace(tzinfo=None)
     trivia = Trivia(
         id=trivia_id,
         title="Test Trivia",
@@ -194,7 +242,7 @@ async def test_submit_answer_correct_within_time():
     option_repo = InMemoryOptionRepository()
     option_repo.options[question_id] = [correct_option, wrong_option]
 
-    answer_repo = InMemoryAnswerRepository()
+    answer_repo = InMemoryAnswerRepository(participation_repo=participation_repo)
 
     use_case = SubmitAnswerUseCase(
         trivia_repo,
@@ -226,7 +274,7 @@ async def test_submit_answer_incorrect():
     participation_id = uuid4()
     trivia_question_id = uuid4()
 
-    started_at = datetime.now(UTC) - timedelta(seconds=5)
+    started_at = (datetime.now(UTC) - timedelta(seconds=5)).replace(tzinfo=None)
     trivia = Trivia(
         id=trivia_id,
         title="Test Trivia",
@@ -288,7 +336,7 @@ async def test_submit_answer_incorrect():
     option_repo = InMemoryOptionRepository()
     option_repo.options[question_id] = [correct_option, wrong_option]
 
-    answer_repo = InMemoryAnswerRepository()
+    answer_repo = InMemoryAnswerRepository(participation_repo=participation_repo)
 
     use_case = SubmitAnswerUseCase(
         trivia_repo,
@@ -319,7 +367,7 @@ async def test_submit_answer_out_of_time():
     trivia_question_id = uuid4()
 
     # Started 35 seconds ago, but time limit is 30 seconds
-    started_at = datetime.now(UTC) - timedelta(seconds=35)
+    started_at = (datetime.now(UTC) - timedelta(seconds=35)).replace(tzinfo=None)
     trivia = Trivia(
         id=trivia_id,
         title="Test Trivia",
@@ -375,7 +423,7 @@ async def test_submit_answer_out_of_time():
     option_repo = InMemoryOptionRepository()
     option_repo.options[question_id] = [correct_option]
 
-    answer_repo = InMemoryAnswerRepository()
+    answer_repo = InMemoryAnswerRepository(participation_repo=participation_repo)
 
     use_case = SubmitAnswerUseCase(
         trivia_repo,
@@ -398,7 +446,7 @@ async def test_submit_answer_out_of_time():
 
 @pytest.mark.asyncio
 async def test_submit_answer_duplicate():
-    """Test submitting duplicate answer raises ConflictError."""
+    """Test submitting duplicate answer returns existing answer (idempotent)."""
     trivia_id = uuid4()
     user_id = uuid4()
     question_id = uuid4()
@@ -406,7 +454,7 @@ async def test_submit_answer_duplicate():
     participation_id = uuid4()
     trivia_question_id = uuid4()
 
-    started_at = datetime.now(UTC) - timedelta(seconds=5)
+    started_at = (datetime.now(UTC) - timedelta(seconds=5)).replace(tzinfo=None)
     trivia = Trivia(
         id=trivia_id,
         title="Test Trivia",
@@ -462,7 +510,7 @@ async def test_submit_answer_duplicate():
     option_repo = InMemoryOptionRepository()
     option_repo.options[question_id] = [option]
 
-    answer_repo = InMemoryAnswerRepository()
+    answer_repo = InMemoryAnswerRepository(participation_repo=participation_repo)
 
     use_case = SubmitAnswerUseCase(
         trivia_repo,
@@ -474,11 +522,15 @@ async def test_submit_answer_duplicate():
     )
 
     # First submission
-    await use_case.execute(trivia_id, user_id, option_id)
+    result1 = await use_case.execute(trivia_id, user_id, option_id)
+    assert result1.is_correct is True
+    assert result1.earned_points == 1
 
-    # Second submission should fail
-    with pytest.raises(ConflictError):
-        await use_case.execute(trivia_id, user_id, option_id)
+    # Second submission should return the same result (idempotent)
+    result2 = await use_case.execute(trivia_id, user_id, option_id)
+    assert result2.is_correct == result1.is_correct
+    assert result2.earned_points == result1.earned_points
+    assert result2.selected_option_id == result1.selected_option_id
 
 
 @pytest.mark.asyncio
@@ -514,7 +566,7 @@ async def test_submit_answer_no_question_started_at():
     trivia_question_repo = InMemoryTriviaQuestionRepository()
     question_repo = InMemoryQuestionRepository()
     option_repo = InMemoryOptionRepository()
-    answer_repo = InMemoryAnswerRepository()
+    answer_repo = InMemoryAnswerRepository(participation_repo=participation_repo)
 
     use_case = SubmitAnswerUseCase(
         trivia_repo,
@@ -544,7 +596,7 @@ async def test_submit_answer_trivia_question_not_found():
         created_by_user_id=uuid4(),
         status=TriviaStatus.IN_PROGRESS,
         current_question_index=0,
-        question_started_at=datetime.now(UTC),
+        question_started_at=datetime.now(UTC).replace(tzinfo=None),
     )
 
     participation = Participation(
@@ -565,7 +617,7 @@ async def test_submit_answer_trivia_question_not_found():
 
     question_repo = InMemoryQuestionRepository()
     option_repo = InMemoryOptionRepository()
-    answer_repo = InMemoryAnswerRepository()
+    answer_repo = InMemoryAnswerRepository(participation_repo=participation_repo)
 
     use_case = SubmitAnswerUseCase(
         trivia_repo,
@@ -596,7 +648,7 @@ async def test_submit_answer_question_not_found():
         created_by_user_id=uuid4(),
         status=TriviaStatus.IN_PROGRESS,
         current_question_index=0,
-        question_started_at=datetime.now(UTC),
+        question_started_at=datetime.now(UTC).replace(tzinfo=None),
     )
 
     participation = Participation(
@@ -627,7 +679,7 @@ async def test_submit_answer_question_not_found():
     # No question added
 
     option_repo = InMemoryOptionRepository()
-    answer_repo = InMemoryAnswerRepository()
+    answer_repo = InMemoryAnswerRepository(participation_repo=participation_repo)
 
     use_case = SubmitAnswerUseCase(
         trivia_repo,
@@ -659,7 +711,7 @@ async def test_submit_answer_option_not_belongs_to_question():
         created_by_user_id=uuid4(),
         status=TriviaStatus.IN_PROGRESS,
         current_question_index=0,
-        question_started_at=datetime.now(UTC),
+        question_started_at=datetime.now(UTC).replace(tzinfo=None),
     )
 
     participation = Participation(
@@ -705,7 +757,7 @@ async def test_submit_answer_option_not_belongs_to_question():
     option_repo = InMemoryOptionRepository()
     option_repo.options[question_id] = [option]  # Only option_id, not wrong_option_id
 
-    answer_repo = InMemoryAnswerRepository()
+    answer_repo = InMemoryAnswerRepository(participation_repo=participation_repo)
 
     use_case = SubmitAnswerUseCase(
         trivia_repo,

@@ -14,3 +14,15 @@ def to_domain(orm_model: UserModel) -> User:
         created_at=orm_model.created_at,
     )
 
+
+def to_orm(user: User) -> UserModel:
+    """Convert User domain entity to UserModel."""
+    return UserModel(
+        id=user.id,
+        name=user.name,
+        email=user.email,
+        password_hash=user.password_hash,
+        role=user.role,
+        created_at=user.created_at,
+    )
+

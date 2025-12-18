@@ -49,6 +49,22 @@ class ParticipationRepositoryPort(ABC):
             participation: The participation entity to update
         """
         pass
+
+    @abstractmethod
+    async def recompute_score(self, trivia_id: UUID, user_id: UUID) -> int:
+        """
+        Recompute and persist score for a user's participation in a trivia
+        based on the sum of earned_points in answers. Returns the new score.
+        """
+        pass
+
+    @abstractmethod
+    async def recompute_scores_for_trivia(self, trivia_id: UUID) -> None:
+        """
+        Recompute and persist scores for all participations of a trivia
+        based on the sum of earned_points in answers.
+        """
+        pass
     
     @abstractmethod
     async def list_by_trivia(self, trivia_id: UUID) -> List[Participation]:
@@ -57,6 +73,19 @@ class ParticipationRepositoryPort(ABC):
         
         Args:
             trivia_id: The trivia ID
+            
+        Returns:
+            List of participation entities
+        """
+        pass
+    
+    @abstractmethod
+    async def list_by_user(self, user_id: UUID) -> List[Participation]:
+        """
+        List all participations for a user.
+        
+        Args:
+            user_id: The user ID
             
         Returns:
             List of participation entities

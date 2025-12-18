@@ -32,6 +32,7 @@ class SQLAlchemyAnswerRepository(AnswerRepositoryPort):
         if not orm_model:
             return None
         return to_domain(orm_model)
+        return to_domain(orm_model)
 
     async def create(self, answer: Answer) -> Answer:
         """Create a new answer."""
@@ -46,7 +47,9 @@ class SQLAlchemyAnswerRepository(AnswerRepositoryPort):
         )
         self.session.add(orm_model)
         try:
-            await self.session.commit()
+            # Use flush instead of commit to allow transaction to continue
+            # The commit will be done by the participation repository update
+            await self.session.flush()
             await self.session.refresh(orm_model)
             return to_domain(orm_model)
         except IntegrityError as e:

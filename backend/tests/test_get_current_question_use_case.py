@@ -27,6 +27,13 @@ class InMemoryTriviaRepository(TriviaRepositoryPort):
     async def get_by_id(self, trivia_id: UUID):
         return self.trivias.get(trivia_id)
 
+    async def list_all(self):
+        return list(self.trivias.values())
+
+    async def create(self, trivia: Trivia):
+        self.trivias[trivia.id] = trivia
+        return trivia
+
     async def update(self, trivia: Trivia):
         self.trivias[trivia.id] = trivia
 
@@ -55,6 +62,24 @@ class InMemoryParticipationRepository(ParticipationRepositoryPort):
             p for (tid, _), p in self.participations.items()
             if tid == trivia_id
         ]
+    
+    async def list_by_user(self, user_id: UUID):
+        return [
+            p for (_, uid), p in self.participations.items()
+            if uid == user_id
+        ]
+    
+    async def recompute_score(self, trivia_id: UUID, user_id: UUID) -> int:
+        """Recompute score from answers (mock implementation)."""
+        participation = await self.get_by_trivia_and_user(trivia_id, user_id)
+        if participation:
+            return participation.score
+        return 0
+    
+    async def recompute_scores_for_trivia(self, trivia_id: UUID) -> None:
+        """Recompute scores for all participations in trivia (mock implementation)."""
+        # In tests, scores are already set correctly, so this is a no-op
+        pass
 
 
 class InMemoryTriviaQuestionRepository(TriviaQuestionRepositoryPort):
@@ -82,6 +107,13 @@ class InMemoryQuestionRepository(QuestionRepositoryPort):
 
     async def get_by_id(self, question_id: UUID):
         return self.questions.get(question_id)
+
+    async def list_all(self):
+        return list(self.questions.values())
+
+    async def create(self, question: Question):
+        self.questions[question.id] = question
+        return question
 
 
 class InMemoryOptionRepository(OptionRepositoryPort):
@@ -111,8 +143,8 @@ async def test_get_current_question_success():
         created_by_user_id=uuid4(),
         status=TriviaStatus.IN_PROGRESS,
         current_question_index=0,
-        question_started_at=datetime.now(UTC),
-        started_at=datetime.now(UTC),
+        question_started_at=datetime.now(UTC).replace(tzinfo=None),
+        started_at=datetime.now(UTC).replace(tzinfo=None),
     )
 
     participation = Participation(
@@ -263,8 +295,8 @@ async def test_get_current_question_time_remaining_calculation():
     user_id = uuid4()
     question_id = uuid4()
 
-    # Set question_started_at to 10 seconds ago
-    started_at = datetime.now(UTC) - timedelta(seconds=10)
+    # Set question_started_at to 10 seconds ago (naive datetime)
+    started_at = (datetime.now(UTC) - timedelta(seconds=10)).replace(tzinfo=None)
     trivia = Trivia(
         id=trivia_id,
         title="Test Trivia",
@@ -366,7 +398,7 @@ async def test_get_current_question_trivia_question_not_found():
         created_by_user_id=uuid4(),
         status=TriviaStatus.IN_PROGRESS,
         current_question_index=0,
-        question_started_at=datetime.now(UTC),
+        question_started_at=datetime.now(UTC).replace(tzinfo=None),
     )
 
     participation = Participation(
@@ -415,7 +447,7 @@ async def test_get_current_question_question_not_found():
         created_by_user_id=uuid4(),
         status=TriviaStatus.IN_PROGRESS,
         current_question_index=0,
-        question_started_at=datetime.now(UTC),
+        question_started_at=datetime.now(UTC).replace(tzinfo=None),
     )
 
     participation = Participation(

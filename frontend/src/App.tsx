@@ -1,10 +1,13 @@
 import { AuthProvider } from './context/AuthContext';
+import { ActiveTriviaProvider } from './context/ActiveTriviaContext';
 import AppRouter from './router/AppRouter';
 
 function App() {
   return (
     <AuthProvider>
-      <AppRouter />
+      <ActiveTriviaProvider>
+        <AppRouter />
+      </ActiveTriviaProvider>
     </AuthProvider>
   );
 }

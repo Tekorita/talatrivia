@@ -1,5 +1,6 @@
 """User repository port."""
 from abc import ABC, abstractmethod
+from typing import List
 from uuid import UUID
 
 from app.domain.entities.user import User
@@ -31,6 +32,29 @@ class UserRepositoryPort(ABC):
             
         Returns:
             User entity or None if not found
+        """
+        pass
+    
+    @abstractmethod
+    async def list_all(self) -> List[User]:
+        """
+        List all users.
+        
+        Returns:
+            List of all user entities
+        """
+        pass
+    
+    @abstractmethod
+    async def create(self, user: User) -> User:
+        """
+        Create a new user.
+        
+        Args:
+            user: The user entity to create
+            
+        Returns:
+            The created user entity
         """
         pass
 

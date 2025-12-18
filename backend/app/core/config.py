@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://test:test@localhost/test"
+    
+    # Presence TTL (seconds)
+    PRESENCE_TTL_SECONDS: int = 15
 
 
 settings = Settings()

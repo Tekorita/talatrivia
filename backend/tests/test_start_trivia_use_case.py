@@ -1,4 +1,5 @@
 """Tests for StartTriviaUseCase."""
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 import pytest
@@ -6,7 +7,7 @@ import pytest
 from app.application.use_cases.start_trivia import StartTriviaUseCase
 from app.domain.entities.participation import Participation, ParticipationStatus
 from app.domain.entities.trivia import Trivia, TriviaStatus
-from app.domain.errors import ForbiddenError, InvalidStateError, NotFoundError
+from app.domain.errors import ConflictError, ForbiddenError, InvalidStateError, NotFoundError
 from app.domain.ports.participation_repository import ParticipationRepositoryPort
 from app.domain.ports.trivia_repository import TriviaRepositoryPort
 
@@ -19,6 +20,13 @@ class InMemoryTriviaRepository(TriviaRepositoryPort):
 
     async def get_by_id(self, trivia_id: UUID):
         return self.trivias.get(trivia_id)
+
+    async def list_all(self):
+        return list(self.trivias.values())
+
+    async def create(self, trivia: Trivia):
+        self.trivias[trivia.id] = trivia
+        return trivia
 
     async def update(self, trivia: Trivia):
         self.trivias[trivia.id] = trivia
@@ -47,6 +55,24 @@ class InMemoryParticipationRepository(ParticipationRepositoryPort):
         return [
             p for (tid, _), p in self.participations.items() if tid == trivia_id
         ]
+    
+    async def list_by_user(self, user_id: UUID):
+        return [
+            p for (_, uid), p in self.participations.items()
+            if uid == user_id
+        ]
+    
+    async def recompute_score(self, trivia_id: UUID, user_id: UUID) -> int:
+        """Recompute score from answers (mock implementation)."""
+        participation = await self.get_by_trivia_and_user(trivia_id, user_id)
+        if participation:
+            return participation.score
+        return 0
+    
+    async def recompute_scores_for_trivia(self, trivia_id: UUID) -> None:
+        """Recompute scores for all participations in trivia (mock implementation)."""
+        # In tests, scores are already set correctly, so this is a no-op
+        pass
 
 
 @pytest.mark.asyncio
@@ -71,12 +97,14 @@ async def test_start_trivia_success():
         trivia_id=trivia_id,
         user_id=user_id_1,
         status=ParticipationStatus.READY,
+        joined_at=datetime.now(UTC),
     )
     participation_2 = Participation(
         id=uuid4(),
         trivia_id=trivia_id,
         user_id=user_id_2,
-        status=ParticipationStatus.JOINED,  # Not ready
+        status=ParticipationStatus.READY,  # Must be READY to start
+        joined_at=datetime.now(UTC),
     )
 
     trivia_repo = InMemoryTriviaRepository()
@@ -194,6 +222,7 @@ async def test_start_trivia_no_ready_players():
         trivia_id=trivia_id,
         user_id=user_id,
         status=ParticipationStatus.JOINED,  # Not READY
+        joined_at=datetime.now(UTC),
     )
 
     trivia_repo = InMemoryTriviaRepository()
@@ -205,6 +234,6 @@ async def test_start_trivia_no_ready_players():
     use_case = StartTriviaUseCase(trivia_repo, participation_repo)
 
     # Execute & Assert
-    with pytest.raises(InvalidStateError, match="at least one player must be READY"):
+    with pytest.raises(ConflictError, match="All assigned players must be ready to start"):
         await use_case.execute(trivia_id, admin_user_id)
 
