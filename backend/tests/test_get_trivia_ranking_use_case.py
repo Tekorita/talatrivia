@@ -23,6 +23,13 @@ class InMemoryTriviaRepository(TriviaRepositoryPort):
     async def get_by_id(self, trivia_id: UUID) -> Trivia | None:
         return self.trivias.get(trivia_id)
 
+    async def list_all(self) -> List[Trivia]:
+        return list(self.trivias.values())
+
+    async def create(self, trivia: Trivia) -> Trivia:
+        self.trivias[trivia.id] = trivia
+        return trivia
+
     async def update(self, trivia: Trivia) -> None:
         self.trivias[trivia.id] = trivia
 
@@ -58,6 +65,23 @@ class InMemoryParticipationRepository(ParticipationRepositoryPort):
         ]
         # Sort by score DESC (simulating repository behavior)
         return sorted(participations, key=lambda p: p.score, reverse=True)
+    
+    async def list_by_user(self, user_id: UUID) -> List[Participation]:
+        return [
+            p for p in self.participations.values() if p.user_id == user_id
+        ]
+    
+    async def recompute_score(self, trivia_id: UUID, user_id: UUID) -> int:
+        """Recompute score from answers (mock implementation)."""
+        participation = await self.get_by_trivia_and_user(trivia_id, user_id)
+        if participation:
+            return participation.score
+        return 0
+    
+    async def recompute_scores_for_trivia(self, trivia_id: UUID) -> None:
+        """Recompute scores for all participations in trivia (mock implementation)."""
+        # In tests, scores are already set correctly, so this is a no-op
+        pass
 
 
 class InMemoryUserRepository(UserRepositoryPort):
@@ -74,6 +98,17 @@ class InMemoryUserRepository(UserRepositoryPort):
             if user.email == email:
                 return user
         return None
+    
+    async def list_all(self) -> List[User]:
+        return list(self.users.values())
+    
+    async def create(self, user: User) -> User:
+        self.users[user.id] = user
+        return user
+    
+    async def get_by_ids(self, user_ids: List[UUID]) -> List[User]:
+        """Get users by IDs."""
+        return [self.users[uid] for uid in user_ids if uid in self.users]
 
 
 @pytest.mark.asyncio

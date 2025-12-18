@@ -1,6 +1,6 @@
 """Tests for AdvanceQuestionUseCase."""
 from datetime import UTC, datetime, timedelta
-from typing import Dict
+from typing import Dict, List
 from uuid import UUID, uuid4
 
 import pytest
@@ -21,6 +21,13 @@ class InMemoryTriviaRepository(TriviaRepositoryPort):
 
     async def get_by_id(self, trivia_id: UUID) -> Trivia | None:
         return self.trivias.get(trivia_id)
+
+    async def list_all(self) -> List[Trivia]:
+        return list(self.trivias.values())
+
+    async def create(self, trivia: Trivia) -> Trivia:
+        self.trivias[trivia.id] = trivia
+        return trivia
 
     async def update(self, trivia: Trivia) -> None:
         self.trivias[trivia.id] = trivia

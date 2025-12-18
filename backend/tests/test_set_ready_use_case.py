@@ -20,6 +20,13 @@ class InMemoryTriviaRepository(TriviaRepositoryPort):
     async def get_by_id(self, trivia_id: UUID):
         return self.trivias.get(trivia_id)
 
+    async def list_all(self):
+        return list(self.trivias.values())
+
+    async def create(self, trivia: Trivia):
+        self.trivias[trivia.id] = trivia
+        return trivia
+
     async def update(self, trivia: Trivia):
         self.trivias[trivia.id] = trivia
 
@@ -47,6 +54,24 @@ class InMemoryParticipationRepository(ParticipationRepositoryPort):
         return [
             p for (tid, _), p in self.participations.items() if tid == trivia_id
         ]
+    
+    async def list_by_user(self, user_id: UUID):
+        return [
+            p for (_, uid), p in self.participations.items()
+            if uid == user_id
+        ]
+    
+    async def recompute_score(self, trivia_id: UUID, user_id: UUID) -> int:
+        """Recompute score from answers (mock implementation)."""
+        participation = await self.get_by_trivia_and_user(trivia_id, user_id)
+        if participation:
+            return participation.score
+        return 0
+    
+    async def recompute_scores_for_trivia(self, trivia_id: UUID) -> None:
+        """Recompute scores for all participations in trivia (mock implementation)."""
+        # In tests, scores are already set correctly, so this is a no-op
+        pass
 
 
 @pytest.mark.asyncio

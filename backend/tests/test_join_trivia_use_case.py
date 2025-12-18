@@ -20,6 +20,13 @@ class InMemoryTriviaRepository(TriviaRepositoryPort):
     async def get_by_id(self, trivia_id: UUID):
         return self.trivias.get(trivia_id)
     
+    async def list_all(self):
+        return list(self.trivias.values())
+    
+    async def create(self, trivia: Trivia):
+        self.trivias[trivia.id] = trivia
+        return trivia
+    
     async def update(self, trivia: Trivia):
         self.trivias[trivia.id] = trivia
 
@@ -48,6 +55,24 @@ class InMemoryParticipationRepository(ParticipationRepositoryPort):
             p for (tid, _), p in self.participations.items()
             if tid == trivia_id
         ]
+    
+    async def list_by_user(self, user_id: UUID):
+        return [
+            p for (_, uid), p in self.participations.items()
+            if uid == user_id
+        ]
+    
+    async def recompute_score(self, trivia_id: UUID, user_id: UUID) -> int:
+        """Recompute score from answers (mock implementation)."""
+        participation = await self.get_by_trivia_and_user(trivia_id, user_id)
+        if participation:
+            return participation.score
+        return 0
+    
+    async def recompute_scores_for_trivia(self, trivia_id: UUID) -> None:
+        """Recompute scores for all participations in trivia (mock implementation)."""
+        # In tests, scores are already set correctly, so this is a no-op
+        pass
 
 
 @pytest.mark.asyncio
@@ -76,7 +101,7 @@ async def test_join_trivia_success():
     
     # Assert
     assert result.trivia_id == trivia_id
-    assert result.participation_status == ParticipationStatus.JOINED
+    assert result.participation_status == ParticipationStatus.READY
     assert result.trivia_status == TriviaStatus.LOBBY
 
 
@@ -154,9 +179,9 @@ async def test_join_trivia_idempotent_existing_joined():
     # Execute
     result = await use_case.execute(trivia_id, user_id)
     
-    # Assert - should return existing participation
+    # Assert - should return existing participation (now updated to READY)
     assert result.participation_id == participation_id
-    assert result.participation_status == ParticipationStatus.JOINED
+    assert result.participation_status == ParticipationStatus.READY
     assert result.trivia_status == TriviaStatus.LOBBY
 
 
@@ -224,7 +249,7 @@ async def test_join_trivia_draft_transitions_to_lobby():
     
     # Assert
     assert result.trivia_id == trivia_id
-    assert result.participation_status == ParticipationStatus.JOINED
+    assert result.participation_status == ParticipationStatus.READY
     assert result.trivia_status == TriviaStatus.LOBBY  # Should be LOBBY now
     
     # Verify trivia was updated
