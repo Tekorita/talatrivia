@@ -53,7 +53,7 @@ export default function LoginPage() {
       if (response.data.role === 'ADMIN') {
         navigate('/admin');
       } else {
-        navigate('/player/lobby');
+        navigate('/play');
       }
     } else {
       setError('Unexpected error');
@@ -63,7 +63,13 @@ export default function LoginPage() {
 
   return (
     <div style={{ padding: '2rem', maxWidth: '400px', margin: '0 auto' }}>
-      <h1 style={{ textAlign: 'center', marginBottom: '2rem' }}>TalaTrivia Login</h1>
+      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <img 
+          src="/images/talatrivia.gif" 
+          alt="TalaTrivia" 
+          style={{ maxWidth: '100%', height: 'auto', display: 'block', margin: '0 auto' }}
+        />
+      </div>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {error && (
           <div
