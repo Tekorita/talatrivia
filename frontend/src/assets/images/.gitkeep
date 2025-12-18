@@ -1,0 +1,2 @@
+# Directorio para imágenes importadas en componentes
+# Usa: import logo from '../assets/images/logo.png'
