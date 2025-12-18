@@ -39,6 +39,9 @@ class GetTriviaRankingUseCase:
         if not trivia:
             raise NotFoundError(f"Trivia {trivia_id} not found")
 
+        # Ensure scores are consistent before reading ranking
+        await self.participation_repository.recompute_scores_for_trivia(trivia_id)
+
         # Get all participations for the trivia (already ordered by score DESC from repository)
         participations = await self.participation_repository.list_by_trivia(trivia_id)
 
@@ -50,13 +53,10 @@ class GetTriviaRankingUseCase:
                 ranking=[],
             )
 
-        # Get users for all participations
-        user_ids = {p.user_id for p in participations}
-        users = {}
-        for user_id in user_ids:
-            user = await self.user_repository.get_by_id(user_id)
-            if user:
-                users[user_id] = user
+        # Get users for all participations - OPTIMIZED: single query instead of N queries
+        user_ids = list({p.user_id for p in participations})
+        users_list = await self.user_repository.get_by_ids(user_ids)
+        users = {user.id: user for user in users_list}
 
         # Build ranking entries with positions
         ranking_entries = []
