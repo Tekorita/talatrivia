@@ -4,7 +4,10 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 
 from app.domain.errors import NotFoundError
-from app.infrastructure.api.routers.play import get_update_heartbeat_use_case
+from app.infrastructure.api.routers.play import (
+    get_get_admin_lobby_use_case,
+    get_update_heartbeat_use_case,
+)
 from app.main import app
 
 client = TestClient(app)
@@ -13,8 +16,21 @@ client = TestClient(app)
 def test_get_player_lobby_endpoint_not_found():
     """Test get player lobby endpoint with non-existent trivia."""
     trivia_id = uuid4()
-    response = client.get(f"/play/trivias/{trivia_id}/lobby")
-    assert response.status_code == 404
+    
+    # Mock the use case to raise NotFoundError
+    class MockGetAdminLobbyUseCase:
+        async def execute_for_player(self, trivia_id):
+            raise NotFoundError(f"Trivia {trivia_id} not found")
+    
+    # Override the dependency
+    app.dependency_overrides[get_get_admin_lobby_use_case] = lambda: MockGetAdminLobbyUseCase()
+    
+    try:
+        response = client.get(f"/play/trivias/{trivia_id}/lobby")
+        assert response.status_code == 404
+    finally:
+        # Clean up the override
+        app.dependency_overrides.clear()
 
 
 def test_get_player_lobby_endpoint_invalid_uuid():
