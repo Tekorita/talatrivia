@@ -27,6 +27,8 @@ class Participation:
         ready_at: datetime | None = None,
         finished_at: datetime | None = None,
         last_seen_at: datetime | None = None,
+        fifty_fifty_used: bool = False,
+        fifty_fifty_question_id: UUID | None = None,
     ):
         self.id = id
         self.trivia_id = trivia_id
@@ -37,4 +39,6 @@ class Participation:
         self.ready_at = ready_at
         self.finished_at = finished_at
         self.last_seen_at = last_seen_at
+        self.fifty_fifty_used = fifty_fifty_used
+        self.fifty_fifty_question_id = fifty_fifty_question_id
 
