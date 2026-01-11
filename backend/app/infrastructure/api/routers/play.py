@@ -11,9 +11,14 @@ from app.application.use_cases.get_assigned_trivias import (
     GetAssignedTriviasUseCase,
 )
 from app.application.use_cases.update_heartbeat import UpdateHeartbeatUseCase
-from app.domain.errors import NotFoundError
+from app.application.use_cases.use_fifty_fifty_lifeline import UseFiftyFiftyLifelineUseCase
+from app.domain.errors import ConflictError, InvalidStateError, NotFoundError
 from app.infrastructure.db.repositories import (
+    SQLAlchemyAnswerRepository,
+    SQLAlchemyOptionRepository,
     SQLAlchemyParticipationRepository,
+    SQLAlchemyQuestionRepository,
+    SQLAlchemyTriviaQuestionRepository,
     SQLAlchemyTriviaRepository,
     SQLAlchemyUserRepository,
 )
@@ -128,6 +133,86 @@ async def get_player_lobby(
 class HeartbeatRequest(BaseModel):
     """Heartbeat request."""
     user_id: UUID
+
+
+class UseFiftyFiftyRequest(BaseModel):
+    """Use fifty-fifty lifeline request."""
+    user_id: UUID
+
+
+def get_use_fifty_fifty_lifeline_use_case(
+    db: AsyncSession = Depends(get_db),
+) -> UseFiftyFiftyLifelineUseCase:
+    """Dependency to get UseFiftyFiftyLifelineUseCase."""
+    trivia_repo = SQLAlchemyTriviaRepository(db)
+    participation_repo = SQLAlchemyParticipationRepository(db)
+    trivia_question_repo = SQLAlchemyTriviaQuestionRepository(db)
+    question_repo = SQLAlchemyQuestionRepository(db)
+    option_repo = SQLAlchemyOptionRepository(db)
+    answer_repo = SQLAlchemyAnswerRepository(db)
+    return UseFiftyFiftyLifelineUseCase(
+        trivia_repo,
+        participation_repo,
+        trivia_question_repo,
+        question_repo,
+        option_repo,
+        answer_repo,
+    )
+
+
+@router.post("/{trivia_id}/questions/{question_id}/lifelines/50-50")
+async def use_fifty_fifty_lifeline(
+    trivia_id: UUID,
+    question_id: UUID,
+    request: UseFiftyFiftyRequest,
+    use_case: UseFiftyFiftyLifelineUseCase = Depends(get_use_fifty_fifty_lifeline_use_case),
+    # TODO: Add authentication to verify user role is PLAYER and user_id matches authenticated user
+):
+    """
+    Use the 50/50 lifeline for a question.
+    
+    Args:
+        trivia_id: The trivia ID
+        question_id: The question ID
+        request: Use fifty-fifty request with user_id
+        use_case: Use fifty-fifty lifeline use case
+        
+    Returns:
+        UseFiftyFiftyResultDTO with 2 allowed options (1 correct + 1 incorrect)
+        
+    Raises:
+        HTTPException: 404 if trivia, participation, or question not found
+        HTTPException: 403 if user not assigned to trivia
+        HTTPException: 409 if lifeline already used or question already answered
+        HTTPException: 422 if trivia is not in IN_PROGRESS or invalid state
+    """
+    try:
+        result = await use_case.execute(trivia_id, question_id, request.user_id)
+        return {
+            "allowed_options": [
+                {
+                    "id": str(opt.id),
+                    "text": opt.text,
+                }
+                for opt in result.allowed_options
+            ],
+            "fifty_fifty_used": result.fifty_fifty_used,
+        }
+    except NotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        ) from e
+    except ConflictError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e),
+        ) from e
+    except InvalidStateError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e),
+        ) from e
 
 
 @router.post("/{trivia_id}/heartbeat", status_code=status.HTTP_204_NO_CONTENT)
