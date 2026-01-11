@@ -154,6 +154,54 @@ To apply migrations:
 docker compose -f docker-compose-local.yml exec backend alembic upgrade head
 ```
 
+### Testing & Code Quality
+
+#### Running Tests
+
+Run all tests:
+
+```bash
+docker compose -f docker-compose-local.yml exec backend pytest tests/ -v
+```
+
+Run a specific test file:
+
+```bash
+docker compose -f docker-compose-local.yml exec backend pytest tests/test_use_fifty_fifty_lifeline.py -v
+```
+
+Run tests with coverage:
+
+```bash
+docker compose -f docker-compose-local.yml exec backend pytest tests/ --cov=app --cov-report=term-missing
+```
+
+Generate HTML coverage report:
+
+```bash
+docker compose -f docker-compose-local.yml exec backend pytest tests/ --cov=app --cov-report=html
+```
+
+#### Code Quality (Ruff)
+
+Check code with ruff:
+
+```bash
+docker compose -f docker-compose-local.yml exec backend python -m ruff check .
+```
+
+Auto-fix ruff issues:
+
+```bash
+docker compose -f docker-compose-local.yml exec backend python -m ruff check . --fix
+```
+
+Check with unsafe fixes:
+
+```bash
+docker compose -f docker-compose-local.yml exec backend python -m ruff check . --unsafe-fixes
+```
+
 ## Authentication
 
 The system uses simple email and password authentication. Users are created automatically when running the seed script (`scripts/seed_db.py`).
