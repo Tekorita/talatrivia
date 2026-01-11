@@ -1,7 +1,7 @@
 """Participation SQLAlchemy model."""
 import uuid
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, UniqueConstraint
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, UniqueConstraint
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -26,6 +26,8 @@ class ParticipationModel(Base):
     ready_at = Column(DateTime, nullable=True)
     finished_at = Column(DateTime, nullable=True)
     last_seen_at = Column(DateTime, nullable=True)
+    fifty_fifty_used = Column(Boolean, default=False, nullable=False)
+    fifty_fifty_question_id = Column(UUID(as_uuid=True), ForeignKey("questions.id"), nullable=True)
     
     # Relationships
     trivia = relationship("TriviaModel", back_populates="participations")

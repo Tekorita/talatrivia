@@ -27,5 +27,7 @@ def to_domain(orm_model: ParticipationModel) -> Participation:
         ready_at=orm_model.ready_at,
         finished_at=orm_model.finished_at,
         last_seen_at=orm_model.last_seen_at,
+        fifty_fifty_used=orm_model.fifty_fifty_used,
+        fifty_fifty_question_id=orm_model.fifty_fifty_question_id,
     )
 
