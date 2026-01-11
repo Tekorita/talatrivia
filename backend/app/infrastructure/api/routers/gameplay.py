@@ -83,6 +83,7 @@ async def get_current_question(
                 for opt in result.options
             ],
             "time_remaining_seconds": result.time_remaining_seconds,
+            "fifty_fifty_available": result.fifty_fifty_available,
         }
     except NotFoundError as e:
         raise HTTPException(
