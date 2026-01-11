@@ -33,6 +33,7 @@ export interface CurrentQuestionDTO {
   remaining_seconds: number;
   question_index: number;
   total_questions: number;
+  fifty_fifty_available: boolean;
 }
 
 export interface SubmitAnswerDTO {
@@ -50,4 +51,9 @@ export interface RankingRowDTO {
   name: string;
   score: number;
   position?: number;
+}
+
+export interface UseFiftyFiftyResponseDTO {
+  allowed_options: QuestionOptionDTO[];
+  fifty_fifty_used: boolean;
 }

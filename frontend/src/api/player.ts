@@ -7,6 +7,7 @@ import type {
   SubmitAnswerDTO,
   SubmitAnswerResponseDTO,
   RankingRowDTO,
+  UseFiftyFiftyResponseDTO,
 } from '../types/player';
 import type { Trivia } from '../types';
 
@@ -101,6 +102,7 @@ export async function getCurrentQuestion(
     question_text: string;
     options: Array<{ option_id: string; option_text: string }>;
     time_remaining_seconds: number;
+    fifty_fifty_available: boolean;
   }>(`/trivias/${triviaId}/current-question?user_id=${userId}`);
   
   if (questionResponse.error) {
@@ -132,6 +134,7 @@ export async function getCurrentQuestion(
       remaining_seconds: questionResponse.data.time_remaining_seconds,
       question_index: questionIndex,
       total_questions: totalQuestions,
+      fifty_fifty_available: questionResponse.data.fifty_fifty_available ?? true,
     },
   };
 }
@@ -173,6 +176,40 @@ export async function submitAnswer(
   return {
     data: {
       accepted: true,
+    },
+  };
+}
+
+/**
+ * Use the 50/50 lifeline for a question.
+ */
+export async function useFiftyFiftyLifeline(
+  triviaId: string,
+  questionId: string,
+  userId: string
+): Promise<{ data?: UseFiftyFiftyResponseDTO; error?: string }> {
+  const response = await post<{
+    allowed_options: Array<{ id: string; text: string }>;
+    fifty_fifty_used: boolean;
+  }>(`/play/trivias/${triviaId}/questions/${questionId}/lifelines/50-50`, {
+    user_id: userId,
+  });
+  
+  if (response.error) {
+    return { error: response.error };
+  }
+  
+  if (!response.data) {
+    return { error: 'No data returned from lifeline endpoint' };
+  }
+  
+  return {
+    data: {
+      allowed_options: response.data.allowed_options.map((opt) => ({
+        id: opt.id,
+        text: opt.text,
+      })),
+      fifty_fifty_used: response.data.fifty_fifty_used,
     },
   };
 }

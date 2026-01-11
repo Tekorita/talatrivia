@@ -47,6 +47,8 @@ class SQLAlchemyParticipationRepository(ParticipationRepositoryPort):
             ready_at=_to_naive_dt(participation.ready_at),
             finished_at=_to_naive_dt(participation.finished_at),
             last_seen_at=_to_naive_dt(participation.last_seen_at),
+            fifty_fifty_used=participation.fifty_fifty_used,
+            fifty_fifty_question_id=participation.fifty_fifty_question_id,
         )
         self.session.add(orm_model)
         await self.session.commit()
@@ -69,6 +71,8 @@ class SQLAlchemyParticipationRepository(ParticipationRepositoryPort):
         orm_model.ready_at = _to_naive_dt(participation.ready_at)
         orm_model.finished_at = _to_naive_dt(participation.finished_at)
         orm_model.last_seen_at = _to_naive_dt(participation.last_seen_at)
+        orm_model.fifty_fifty_used = participation.fifty_fifty_used
+        orm_model.fifty_fifty_question_id = participation.fifty_fifty_question_id
 
         await self.session.commit()
         logger.info(

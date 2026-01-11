@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { getStatus, getCurrentQuestion, submitAnswer, updateHeartbeat } from '../../api/player';
+import { getStatus, getCurrentQuestion, submitAnswer, updateHeartbeat, useFiftyFiftyLifeline } from '../../api/player';
 import { usePolling } from '../../hooks/usePolling';
 import type { TriviaStatusDTO, CurrentQuestionDTO, SubmitAnswerDTO } from '../../types/player';
 
@@ -17,6 +17,9 @@ export default function PlayerGamePage() {
   const [answerLocked, setAnswerLocked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [fiftyFiftyUsed, setFiftyFiftyUsed] = useState(false);
+  const [usingFiftyFifty, setUsingFiftyFifty] = useState(false);
+  const [allowedOptions, setAllowedOptions] = useState<string[] | null>(null);
 
   // Refs to avoid re-renders on polling
   const lastQuestionIdRef = useRef<string | null>(null);
@@ -82,6 +85,8 @@ export default function PlayerGamePage() {
       setAnswerLocked(false);
       answerLockedRef.current = false;
       setSubmitting(false);
+      setAllowedOptions(null); // Reset allowed options for new question
+      setFiftyFiftyUsed(!questionData.fifty_fifty_available); // Update based on availability
 
       if (newTimeRemaining > 0) {
         setUiState('ACTIVE');
@@ -162,6 +167,42 @@ export default function PlayerGamePage() {
     }
     selectedOptionIdRef.current = optionId; // sync ref immediately
     setSelectedOptionId(optionId);
+  };
+
+  // Update fiftyFiftyUsed when questionData changes
+  useEffect(() => {
+    if (questionData) {
+      setFiftyFiftyUsed(!questionData.fifty_fifty_available);
+    }
+  }, [questionData?.fifty_fifty_available]);
+
+  const handleUseFiftyFifty = async () => {
+    if (!triviaId || !user || !questionData || fiftyFiftyUsed || usingFiftyFifty || answerLocked) {
+      return;
+    }
+
+    setUsingFiftyFifty(true);
+
+    try {
+      const response = await useFiftyFiftyLifeline(triviaId, questionData.question_id, user.id);
+
+      if (response.error) {
+        alert(`Error usando comodín 50/50: ${response.error}`);
+        setUsingFiftyFifty(false);
+        return;
+      }
+
+      if (response.data) {
+        // Update allowed options
+        const allowedIds = response.data.allowed_options.map((opt) => opt.id);
+        setAllowedOptions(allowedIds);
+        setFiftyFiftyUsed(true);
+      }
+    } catch (err) {
+      alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setUsingFiftyFifty(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -373,12 +414,36 @@ export default function PlayerGamePage() {
             </div>
           )}
 
+          {/* 50/50 Lifeline Button */}
+          {questionData.fifty_fifty_available && !fiftyFiftyUsed && (
+            <div style={{ marginBottom: '1rem', textAlign: 'center' }}>
+              <button
+                onClick={handleUseFiftyFifty}
+                disabled={usingFiftyFifty || answerLocked || timeRemaining <= 0 || uiState !== 'ACTIVE'}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  fontSize: '1rem',
+                  backgroundColor: usingFiftyFifty || answerLocked || timeRemaining <= 0 || uiState !== 'ACTIVE' ? '#ccc' : '#ff9800',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: usingFiftyFifty || answerLocked || timeRemaining <= 0 || uiState !== 'ACTIVE' ? 'not-allowed' : 'pointer',
+                  fontWeight: 'bold',
+                }}
+              >
+                {usingFiftyFifty ? 'Usando comodín...' : '🎯 Comodín 50/50'}
+              </button>
+            </div>
+          )}
+
           {/* Options */}
           <div 
             key={questionData.question_id}
             style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}
           >
-            {questionData.options.map((option) => {
+            {questionData.options
+              .filter((option) => !allowedOptions || allowedOptions.includes(option.id))
+              .map((option) => {
               const isSelected = selectedOptionId === option.id;
               const isDisabled = answerLocked || submitting || timeRemaining <= 0 || uiState !== 'ACTIVE';
 
