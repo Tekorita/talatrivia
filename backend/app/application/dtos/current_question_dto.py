@@ -17,4 +17,5 @@ class CurrentQuestionDTO:
     question_text: str
     options: list[OptionDTO]
     time_remaining_seconds: int
+    fifty_fifty_available: bool
 

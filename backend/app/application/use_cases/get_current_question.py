@@ -121,10 +121,14 @@ class GetCurrentQuestionUseCase:
             for option in options
         ]
 
+        # Check if fifty-fifty lifeline is available
+        fifty_fifty_available = not participation.fifty_fifty_used
+
         return CurrentQuestionDTO(
             question_id=question.id,
             question_text=question.text,
             options=option_dtos,
             time_remaining_seconds=time_remaining_seconds,
+            fifty_fifty_available=fifty_fifty_available,
         )
 
