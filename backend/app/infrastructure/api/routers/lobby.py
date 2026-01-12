@@ -16,11 +16,25 @@ from app.domain.errors import (
     InvalidStateError,
     NotFoundError,
 )
+from app.application.use_cases.get_admin_lobby_use_case import GetAdminLobbyUseCase
+from app.application.use_cases.get_current_question import GetCurrentQuestionUseCase
+from app.application.use_cases.get_trivia_ranking import GetTriviaRankingUseCase
 from app.infrastructure.db.repositories import (
+    SQLAlchemyOptionRepository,
     SQLAlchemyParticipationRepository,
+    SQLAlchemyQuestionRepository,
+    SQLAlchemyTriviaQuestionRepository,
     SQLAlchemyTriviaRepository,
+    SQLAlchemyUserRepository,
 )
 from app.infrastructure.db.session import get_db
+from app.infrastructure.sse.event_emitter import (
+    emit_admin_lobby_updated,
+    emit_current_question_updated,
+    emit_lobby_updated,
+    emit_ranking_updated,
+    emit_status_updated,
+)
 
 router = APIRouter(prefix="/trivias", tags=["lobby"])
 
@@ -72,6 +86,7 @@ async def join_trivia(
     trivia_id: UUID,
     request: JoinTriviaRequest,
     use_case: JoinTriviaUseCase = Depends(get_join_trivia_use_case),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Join a trivia.
@@ -86,6 +101,25 @@ async def join_trivia(
     """
     try:
         result = await use_case.execute(trivia_id, request.user_id)
+        
+        # Emit SSE events after successful join
+        # Get lobby data for events
+        trivia_repo = SQLAlchemyTriviaRepository(db)
+        participation_repo = SQLAlchemyParticipationRepository(db)
+        user_repo = SQLAlchemyUserRepository(db)
+        get_lobby_use_case = GetAdminLobbyUseCase(trivia_repo, participation_repo, user_repo)
+        
+        lobby_dto = await get_lobby_use_case.execute_for_player(trivia_id)
+        admin_lobby_dto = await get_lobby_use_case.execute(trivia_id)
+        
+        # Get trivia for status
+        trivia = await trivia_repo.get_by_id(trivia_id)
+        
+        # Emit events
+        await emit_lobby_updated(trivia_id, lobby_dto)
+        await emit_admin_lobby_updated(trivia_id, admin_lobby_dto)
+        await emit_status_updated(trivia_id, result.trivia_status.value, trivia.current_question_index if trivia else 0)
+        
         return {
             "trivia_id": str(result.trivia_id),
             "participation_id": str(result.participation_id),
@@ -117,6 +151,7 @@ async def set_ready(
     trivia_id: UUID,
     request: SetReadyRequest,
     use_case: SetReadyUseCase = Depends(get_set_ready_use_case),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Set participant as ready.
@@ -131,6 +166,24 @@ async def set_ready(
     """
     try:
         result = await use_case.execute(trivia_id, request.user_id)
+        
+        # Emit SSE events after successful set ready
+        trivia_repo = SQLAlchemyTriviaRepository(db)
+        participation_repo = SQLAlchemyParticipationRepository(db)
+        user_repo = SQLAlchemyUserRepository(db)
+        get_lobby_use_case = GetAdminLobbyUseCase(trivia_repo, participation_repo, user_repo)
+        
+        lobby_dto = await get_lobby_use_case.execute_for_player(trivia_id)
+        admin_lobby_dto = await get_lobby_use_case.execute(trivia_id)
+        
+        # Get trivia for status
+        trivia = await trivia_repo.get_by_id(trivia_id)
+        
+        # Emit events
+        await emit_lobby_updated(trivia_id, lobby_dto)
+        await emit_admin_lobby_updated(trivia_id, admin_lobby_dto)
+        await emit_status_updated(trivia_id, trivia.status.value if trivia else "LOBBY", trivia.current_question_index if trivia else 0)
+        
         return {
             "participation_id": str(result.participation_id),
             "participation_status": result.participation_status.value,
@@ -152,6 +205,7 @@ async def start_trivia(
     trivia_id: UUID,
     request: StartTriviaRequest,
     use_case: StartTriviaUseCase = Depends(get_start_trivia_use_case),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Start a trivia.
@@ -166,6 +220,36 @@ async def start_trivia(
     """
     try:
         result = await use_case.execute(trivia_id, request.admin_user_id)
+        
+        # Emit SSE events after successful start
+        trivia_repo = SQLAlchemyTriviaRepository(db)
+        participation_repo = SQLAlchemyParticipationRepository(db)
+        user_repo = SQLAlchemyUserRepository(db)
+        trivia_question_repo = SQLAlchemyTriviaQuestionRepository(db)
+        question_repo = SQLAlchemyQuestionRepository(db)
+        option_repo = SQLAlchemyOptionRepository(db)
+        
+        # Emit status update
+        await emit_status_updated(trivia_id, result.trivia_status.value, result.current_question_index)
+        
+        # Emit current question if trivia is IN_PROGRESS
+        if result.trivia_status.value == "IN_PROGRESS":
+            get_current_question_use_case = GetCurrentQuestionUseCase(
+                trivia_repo, participation_repo, trivia_question_repo, question_repo, option_repo
+            )
+            # Get first participant for current question (any user_id works for getting question)
+            participations = await participation_repo.list_by_trivia(trivia_id)
+            if participations:
+                current_question_dto = await get_current_question_use_case.execute(
+                    trivia_id, participations[0].user_id
+                )
+                await emit_current_question_updated(trivia_id, current_question_dto)
+        
+        # Emit ranking update
+        get_ranking_use_case = GetTriviaRankingUseCase(trivia_repo, participation_repo, user_repo)
+        ranking_dto = await get_ranking_use_case.execute(trivia_id)
+        await emit_ranking_updated(trivia_id, ranking_dto)
+        
         return {
             "trivia_id": str(result.trivia_id),
             "trivia_status": result.trivia_status.value,

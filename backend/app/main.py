@@ -8,6 +8,7 @@ from app.core.logging import setup_logging
 from app.infrastructure.api.routers import (
     admin,
     auth,
+    events,
     gameplay,
     health,
     lobby,
@@ -61,4 +62,5 @@ app.include_router(admin.router)
 app.include_router(play.router)
 app.include_router(lobby.router)
 app.include_router(gameplay.router)
+app.include_router(events.router)
 

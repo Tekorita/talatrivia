@@ -20,6 +20,11 @@ from app.infrastructure.db.repositories import (
     SQLAlchemyUserRepository,
 )
 from app.infrastructure.db.session import get_db
+from app.infrastructure.sse.event_emitter import (
+    emit_current_question_updated,
+    emit_ranking_updated,
+    emit_status_updated,
+)
 
 router = APIRouter(prefix="/trivias", tags=["gameplay"])
 
@@ -122,6 +127,7 @@ async def submit_answer(
     trivia_id: UUID,
     request: SubmitAnswerRequest,
     use_case: SubmitAnswerUseCase = Depends(get_submit_answer_use_case),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Submit an answer to the current question of a trivia.
@@ -138,6 +144,17 @@ async def submit_answer(
         result = await use_case.execute(
             trivia_id, request.user_id, request.selected_option_id
         )
+        
+        # Emit SSE events after successful answer submission
+        trivia_repo = SQLAlchemyTriviaRepository(db)
+        participation_repo = SQLAlchemyParticipationRepository(db)
+        user_repo = SQLAlchemyUserRepository(db)
+        
+        # Emit ranking update (score changed)
+        get_ranking_use_case = GetTriviaRankingUseCase(trivia_repo, participation_repo, user_repo)
+        ranking_dto = await get_ranking_use_case.execute(trivia_id)
+        await emit_ranking_updated(trivia_id, ranking_dto)
+        
         return {
             "trivia_id": str(result.trivia_id),
             "question_id": str(result.question_id),
@@ -181,6 +198,7 @@ async def advance_question(
     trivia_id: UUID,
     request: AdvanceQuestionRequest,
     use_case: AdvanceQuestionUseCase = Depends(get_advance_question_use_case),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Advance to the next question or finish the trivia.
@@ -195,6 +213,36 @@ async def advance_question(
     """
     try:
         result = await use_case.execute(trivia_id, request.admin_user_id)
+        
+        # Emit SSE events after successful advance
+        trivia_repo = SQLAlchemyTriviaRepository(db)
+        participation_repo = SQLAlchemyParticipationRepository(db)
+        trivia_question_repo = SQLAlchemyTriviaQuestionRepository(db)
+        question_repo = SQLAlchemyQuestionRepository(db)
+        option_repo = SQLAlchemyOptionRepository(db)
+        user_repo = SQLAlchemyUserRepository(db)
+        
+        # Emit status update
+        await emit_status_updated(trivia_id, result.status.value, result.current_question_index)
+        
+        # Emit current question if trivia is still IN_PROGRESS
+        if result.status.value == "IN_PROGRESS":
+            get_current_question_use_case = GetCurrentQuestionUseCase(
+                trivia_repo, participation_repo, trivia_question_repo, question_repo, option_repo
+            )
+            # Get first participant for current question
+            participations = await participation_repo.list_by_trivia(trivia_id)
+            if participations:
+                current_question_dto = await get_current_question_use_case.execute(
+                    trivia_id, participations[0].user_id
+                )
+                await emit_current_question_updated(trivia_id, current_question_dto)
+        
+        # Emit ranking update
+        get_ranking_use_case = GetTriviaRankingUseCase(trivia_repo, participation_repo, user_repo)
+        ranking_dto = await get_ranking_use_case.execute(trivia_id)
+        await emit_ranking_updated(trivia_id, ranking_dto)
+        
         return {
             "trivia_id": str(result.trivia_id),
             "status": result.status.value,
