@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import { startTrivia, advanceQuestion, getTriviaRanking, getCurrentQuestion } from '../../../api/gameplayApi';
-import { getAdminLobby } from '../../../api/triviasApi';
-import { usePolling } from '../../../hooks/usePolling';
+import { startTrivia, advanceQuestion } from '../../../api/gameplayApi';
+import { useTriviaEvents } from '../../../hooks/useTriviaEvents';
 import { TriviaRanking, CurrentQuestion } from '../../../types';
 import type { AdminLobbyDTO } from '../../../types/adminLobby';
 
@@ -20,76 +19,46 @@ export default function TriviaControlTab({
   const { user } = useAuth();
   const [ranking, setRanking] = useState<TriviaRanking | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<CurrentQuestion | null>(null);
+  const [lobbyData, setLobbyData] = useState<AdminLobbyDTO | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  // Poll admin lobby
-  const {
-    data: lobbyData,
-    error: lobbyError,
-  } = usePolling<AdminLobbyDTO>(
-    async () => {
-      if (!triviaId) throw new Error('No trivia ID');
-      const response = await getAdminLobby(triviaId);
-      if (response.error) throw new Error(response.error);
-      if (!response.data) throw new Error('No lobby data');
-      return response.data;
+  // Use SSE events instead of polling
+  useTriviaEvents({
+    triviaId,
+    userId: user?.id,
+    role: 'ADMIN',
+    enabled: !!triviaId,
+    onAdminLobbyUpdated: (data) => {
+      setLobbyData(data);
     },
-    {
-      intervalMs: 1000,
-      enabled: !!triviaId && (triviaStatus === 'LOBBY' || triviaStatus === 'DRAFT'),
-    }
-  );
-
-  useEffect(() => {
-    if (triviaId && (triviaStatus === 'IN_PROGRESS' || triviaStatus === 'FINISHED')) {
-      loadRanking();
-      loadCurrentQuestion();
-      // Poll ranking every 2 seconds when trivia is in progress
-      const interval = setInterval(() => {
-        loadRanking();
-        loadCurrentQuestion();
-      }, 2000);
-      return () => clearInterval(interval);
-    } else if (triviaId) {
-      // Load once for other statuses
-      loadRanking();
-      loadCurrentQuestion();
-    }
-  }, [triviaId, triviaStatus]);
-
-  const loadRanking = async () => {
-    if (!triviaId) return;
-    const response = await getTriviaRanking(triviaId);
-    if (response.error) {
-      console.error('Error loading ranking:', response.error);
-      return;
-    }
-    if (response.data) {
-      // Sort by score descending and add position
-      const sortedEntries = response.data.entries
-        .sort((a, b) => b.score - a.score)
-        .map((entry, index) => ({
-          ...entry,
-          position: index + 1,
-        }));
+    onRankingUpdated: (data) => {
+      // Map SSE ranking format to TriviaRanking format
       setRanking({
-        ...response.data,
-        entries: sortedEntries,
+        trivia_id: data.trivia_id,
+        entries: data.entries.map((entry) => ({
+          user_id: entry.user_id,
+          user_name: entry.name,
+          score: entry.score,
+          position: entry.position,
+        })),
       });
-    } else {
-      // No data returned, set empty ranking
-      setRanking({ trivia_id: triviaId, entries: [] });
-    }
-  };
-
-  const loadCurrentQuestion = async () => {
-    if (!triviaId || !user) return;
-    const response = await getCurrentQuestion(triviaId, user.id);
-    if (response.data) {
-      setCurrentQuestion(response.data);
-    }
-  };
+    },
+    onCurrentQuestionUpdated: (data) => {
+      // Map SSE current question format to CurrentQuestion format
+      setCurrentQuestion({
+        question_id: data.question_id,
+        question_text: data.text,
+        options: data.options.map((opt) => ({
+          id: opt.id,
+          text: opt.text,
+        })),
+        time_remaining_seconds: data.remaining_seconds,
+        current_question_index: data.question_index,
+        total_questions: data.total_questions,
+      });
+    },
+  });
 
   const [startInFlight, setStartInFlight] = useState(false);
   const [nextInFlight, setNextInFlight] = useState(false);
@@ -108,9 +77,7 @@ export default function TriviaControlTab({
         setActionError(response.error);
       }
     } else if (response.data) {
-      // Reload ranking and question
-      loadRanking();
-      loadCurrentQuestion();
+      // Status will be updated via SSE
       if (onStatusUpdate) {
         onStatusUpdate();
       }
@@ -137,9 +104,7 @@ export default function TriviaControlTab({
     if (response.error) {
       setActionError(response.error);
     } else if (response.data) {
-      // Reload ranking and question
-      loadRanking();
-      loadCurrentQuestion();
+      // Status will be updated via SSE
       if (onStatusUpdate) {
         onStatusUpdate();
       }
@@ -161,19 +126,6 @@ export default function TriviaControlTab({
         <div className="card mb-4 fade-in">
           <div className="card-body">
             <h5 className="card-title mb-3">Estado del Lobby</h5>
-            
-            {lobbyError !== undefined && (() => {
-              const errorMessage = lobbyError instanceof Error 
-                ? lobbyError.message 
-                : typeof lobbyError === 'string' 
-                  ? lobbyError 
-                  : 'Error desconocido';
-              return (
-                <div className="alert alert-warning mb-3">
-                  Error al cargar el lobby: {errorMessage}
-                </div>
-              );
-            })()}
 
             {lobbyData && (
               <>
