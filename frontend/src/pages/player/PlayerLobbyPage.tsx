@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { joinTrivia, setReady, getLobby, getStatus, updateHeartbeat } from '../../api/player';
-import { usePolling } from '../../hooks/usePolling';
+import { joinTrivia, setReady, updateHeartbeat, getLobby, getStatus } from '../../api/player';
+import { useTriviaEvents } from '../../hooks/useTriviaEvents';
 import type { LobbyDTO, TriviaStatusDTO } from '../../types/player';
 
 export default function PlayerLobbyPage() {
@@ -12,6 +12,8 @@ export default function PlayerLobbyPage() {
   const [joining, setJoining] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [connectionUnstable, setConnectionUnstable] = useState(false);
+  const [lobbyData, setLobbyData] = useState<LobbyDTO | null>(null);
+  const [statusData, setStatusData] = useState<TriviaStatusDTO | null>(null);
 
   // Join trivia and set ready on mount
   useEffect(() => {
@@ -36,6 +38,26 @@ export default function PlayerLobbyPage() {
           console.warn('Failed to set ready:', readyResponse.error);
         }
 
+        // Load initial lobby state after joining
+        try {
+          const lobbyResponse = await getLobby(triviaId);
+          if (lobbyResponse.data) {
+            setLobbyData(lobbyResponse.data);
+          }
+        } catch (err) {
+          console.warn('Failed to load initial lobby state:', err);
+        }
+
+        // Load initial status
+        try {
+          const statusResponse = await getStatus(triviaId);
+          if (statusResponse.data) {
+            setStatusData(statusResponse.data);
+          }
+        } catch (err) {
+          console.warn('Failed to load initial status:', err);
+        }
+
         setJoining(false);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to join trivia');
@@ -46,60 +68,34 @@ export default function PlayerLobbyPage() {
     initialize();
   }, [triviaId, user]);
 
-  // Poll lobby
-  const {
-    data: lobbyData,
-    error: lobbyError,
-    loading: lobbyLoading,
-  } = usePolling<LobbyDTO>(
-    async () => {
-      if (!triviaId) throw new Error('No trivia ID');
-      const response = await getLobby(triviaId);
-      if (response.error) {
-        setConnectionUnstable(true);
-        throw new Error(response.error);
-      }
-      if (!response.data) throw new Error('No lobby data');
+  // Use SSE events instead of polling
+  const { error: sseError } = useTriviaEvents({
+    triviaId: triviaId || '',
+    userId: user?.id,
+    role: 'PLAYER',
+    enabled: !joining && !!triviaId,
+    onLobbyUpdated: (data) => {
+      setLobbyData(data);
       setConnectionUnstable(false);
-      return response.data;
     },
-    {
-      intervalMs: 1000,
-      enabled: !joining && !!triviaId,
-      onError: () => {
-        setConnectionUnstable(true);
-      },
-    }
-  );
+    onStatusUpdated: (data) => {
+      setStatusData(data);
+      setConnectionUnstable(false);
+      // Navigate automatically when status changes
+      if (data.state === 'IN_PROGRESS') {
+        navigate(`/play/trivias/${triviaId}/game`);
+      } else if (data.state === 'FINISHED') {
+        navigate(`/play/trivias/${triviaId}/results`);
+      }
+    },
+  });
 
-  // Poll status and navigate automatically
-  const { data: statusData } = usePolling<TriviaStatusDTO>(
-    async () => {
-      if (!triviaId) throw new Error('No trivia ID');
-      const response = await getStatus(triviaId);
-      if (response.error) {
-        setConnectionUnstable(true);
-        throw new Error(response.error);
-      }
-      if (!response.data) throw new Error('No status data');
-      setConnectionUnstable(false);
-      return response.data;
-    },
-    {
-      intervalMs: 1000,
-      enabled: !joining && !!triviaId,
-      onData: (data) => {
-        if (data.state === 'IN_PROGRESS') {
-          navigate(`/play/trivias/${triviaId}/game`);
-        } else if (data.state === 'FINISHED') {
-          navigate(`/play/trivias/${triviaId}/results`);
-        }
-      },
-      onError: () => {
-        setConnectionUnstable(true);
-      },
+  // Handle SSE connection errors
+  useEffect(() => {
+    if (sseError) {
+      setConnectionUnstable(true);
     }
-  );
+  }, [sseError]);
 
   // Heartbeat: send every 5 seconds when page is active
   const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -232,16 +228,6 @@ export default function PlayerLobbyPage() {
         </div>
       )}
 
-      {lobbyError !== undefined && !connectionUnstable && (
-        <div style={{ padding: '0.75rem', backgroundColor: '#f8d7da', color: '#721c24', borderRadius: '4px', marginBottom: '1rem' }}>
-          Error loading lobby: {lobbyError instanceof Error 
-            ? lobbyError.message 
-            : typeof lobbyError === 'string' 
-              ? lobbyError 
-              : 'Unknown error'}
-        </div>
-      )}
-
       <div style={{ backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #ddd', padding: '1.5rem', marginBottom: '2rem' }}>
         <h2 style={{ marginTop: 0 }}>Players</h2>
         <div style={{ marginBottom: '1rem', fontSize: '1.1rem', display: 'flex', gap: '2rem' }}>
@@ -249,7 +235,7 @@ export default function PlayerLobbyPage() {
           <strong>Listos: {readyCount} / {totalCount}</strong>
         </div>
 
-        {lobbyLoading && !lobbyData ? (
+        {!lobbyData ? (
           <div>Loading players...</div>
         ) : players.length === 0 ? (
           <div style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>No players yet</div>
