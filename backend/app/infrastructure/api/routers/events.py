@@ -64,7 +64,7 @@ async def generate_sse_stream(client: SSEClient):
     """
     try:
         # Send initial connection event
-        yield f"event: connected\n"
+        yield "event: connected\n"
         yield f"data: {json.dumps({'message': 'Connected to trivia events'})}\n\n"
         
         # Stream events from queue
