@@ -87,6 +87,12 @@ class StartTriviaUseCase:
                 f"All assigned players must be ready to start."
             )
         
+        # Reset 50/50 lifeline for all participations before starting
+        for participation in participations:
+            participation.fifty_fifty_used = False
+            participation.fifty_fifty_question_id = None
+            await self.participation_repository.update(participation)
+        
         # Update trivia status
         now = datetime.now(UTC)
         trivia.status = TriviaStatus.IN_PROGRESS

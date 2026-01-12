@@ -493,11 +493,15 @@ async def reset_trivia(
         delete(AnswerModel).where(AnswerModel.participation_id.in_(participation_ids_stmt))
     )
 
-    # Reset participation scores
+    # Reset participation scores and 50/50 lifeline
     await db.execute(
         update(ParticipationModel)
         .where(ParticipationModel.trivia_id == trivia_id)
-        .values(score=0)
+        .values(
+            score=0,
+            fifty_fifty_used=False,
+            fifty_fifty_question_id=None
+        )
     )
 
     # Reset trivia status and pointers
