@@ -124,11 +124,16 @@ class GetCurrentQuestionUseCase:
         # Check if fifty-fifty lifeline is available
         fifty_fifty_available = not participation.fifty_fifty_used
 
+        # Get total questions count
+        total_questions = await self.trivia_question_repository.count_by_trivia(trivia_id)
+
         return CurrentQuestionDTO(
             question_id=question.id,
             question_text=question.text,
             options=option_dtos,
             time_remaining_seconds=time_remaining_seconds,
             fifty_fifty_available=fifty_fifty_available,
+            question_index=trivia.current_question_index,
+            total_questions=total_questions,
         )
 
