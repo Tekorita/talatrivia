@@ -1,35 +1,64 @@
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getRanking } from '../../api/player';
-import { usePolling } from '../../hooks/usePolling';
+import { useTriviaEvents } from '../../hooks/useTriviaEvents';
 import type { RankingRowDTO } from '../../types/player';
 
 export default function PlayerResultsPage() {
   const { triviaId } = useParams<{ triviaId: string }>();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [rankingData, setRankingData] = useState<RankingRowDTO[]>([]);
+  const [rankingError, setRankingError] = useState<unknown>(undefined);
+  const [rankingLoading, setRankingLoading] = useState(true);
 
   const goToLobby = () => {
     navigate('/play');
   };
 
-  // Poll ranking
-  const {
-    data: rankingData,
-    error: rankingError,
-    loading: rankingLoading,
-  } = usePolling<RankingRowDTO[]>(
-    async () => {
-      if (!triviaId) throw new Error('No trivia ID');
-      const response = await getRanking(triviaId);
-      if (response.error) throw new Error(response.error);
-      return response.data || [];
+  // Load initial ranking
+  useEffect(() => {
+    const loadInitialRanking = async () => {
+      if (!triviaId) return;
+      try {
+        const response = await getRanking(triviaId);
+        if (response.error) {
+          setRankingError(new Error(response.error));
+          setRankingLoading(false);
+        } else if (response.data) {
+          setRankingData(response.data);
+          setRankingLoading(false);
+          setRankingError(undefined);
+        }
+      } catch (err) {
+        setRankingError(err);
+        setRankingLoading(false);
+      }
+    };
+    loadInitialRanking();
+  }, [triviaId]);
+
+  // Use SSE events instead of polling for updates
+  useTriviaEvents({
+    triviaId: triviaId || '',
+    userId: user?.id,
+    role: 'PLAYER',
+    enabled: !!triviaId,
+    onRankingUpdated: (data) => {
+      // Map SSE ranking format to RankingRowDTO[] format
+      setRankingData(
+        data.entries.map((entry) => ({
+          user_id: entry.user_id,
+          name: entry.name,
+          score: entry.score,
+          position: entry.position,
+        }))
+      );
+      setRankingLoading(false);
+      setRankingError(undefined);
     },
-    {
-      intervalMs: 2000,
-      enabled: !!triviaId,
-    }
-  );
+  });
 
   const handleLogout = () => {
     logout();

@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useActiveTrivia } from '../../context/ActiveTriviaContext';
 import { getTrivias } from '../../api/triviasApi';
-import { startTrivia, advanceQuestion, getTriviaRanking, getCurrentQuestion } from '../../api/gameplayApi';
+import { startTrivia, advanceQuestion } from '../../api/gameplayApi';
+import { useTriviaEvents } from '../../hooks/useTriviaEvents';
 import { Trivia, TriviaRanking, CurrentQuestion } from '../../types';
 
 export default function ControlPage() {
@@ -18,18 +19,39 @@ export default function ControlPage() {
     loadTrivias();
   }, []);
 
-  useEffect(() => {
-    if (activeTriviaId) {
-      loadRanking();
-      loadCurrentQuestion();
-      // Poll ranking every 3 seconds
-      const interval = setInterval(() => {
-        loadRanking();
-        loadCurrentQuestion();
-      }, 3000);
-      return () => clearInterval(interval);
-    }
-  }, [activeTriviaId]);
+  // Use SSE events instead of polling
+  useTriviaEvents({
+    triviaId: activeTriviaId || '',
+    userId: user?.id,
+    role: 'ADMIN',
+    enabled: !!activeTriviaId,
+    onRankingUpdated: (data) => {
+      // Map SSE ranking format to TriviaRanking format
+      setRanking({
+        trivia_id: data.trivia_id,
+        entries: data.entries.map((entry) => ({
+          user_id: entry.user_id,
+          user_name: entry.name,
+          score: entry.score,
+          position: entry.position,
+        })),
+      });
+    },
+    onCurrentQuestionUpdated: (data) => {
+      // Map SSE current question format to CurrentQuestion format
+      setCurrentQuestion({
+        question_id: data.question_id,
+        question_text: data.text,
+        options: data.options.map((opt) => ({
+          id: opt.id,
+          text: opt.text,
+        })),
+        time_remaining_seconds: data.remaining_seconds,
+        current_question_index: data.question_index,
+        total_questions: data.total_questions,
+      });
+    },
+  });
 
   const loadTrivias = async () => {
     const response = await getTrivias();
@@ -38,32 +60,6 @@ export default function ControlPage() {
       setTrivias([]);
     } else if (response.data) {
       setTrivias(response.data);
-    }
-  };
-
-  const loadRanking = async () => {
-    if (!activeTriviaId) return;
-    const response = await getTriviaRanking(activeTriviaId);
-    if (response.data) {
-      // Sort by score descending and add position
-      const sortedEntries = response.data.entries
-        .sort((a, b) => b.score - a.score)
-        .map((entry, index) => ({
-          ...entry,
-          position: index + 1,
-        }));
-      setRanking({
-        ...response.data,
-        entries: sortedEntries,
-      });
-    }
-  };
-
-  const loadCurrentQuestion = async () => {
-    if (!activeTriviaId || !user) return;
-    const response = await getCurrentQuestion(activeTriviaId, user.id);
-    if (response.data) {
-      setCurrentQuestion(response.data);
     }
   };
 
@@ -76,9 +72,8 @@ export default function ControlPage() {
       setActionError(response.error);
     } else if (response.data) {
       // Reload trivias to get updated status
+      // Ranking and current question will be updated via SSE
       loadTrivias();
-      loadRanking();
-      loadCurrentQuestion();
     }
     setActionLoading(false);
   };
@@ -91,9 +86,9 @@ export default function ControlPage() {
     if (response.error) {
       setActionError(response.error);
     } else if (response.data) {
-      // Reload trivias and current question
+      // Reload trivias
+      // Current question will be updated via SSE
       loadTrivias();
-      loadCurrentQuestion();
     }
     setActionLoading(false);
   };
