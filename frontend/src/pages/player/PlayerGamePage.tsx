@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { getStatus, getCurrentQuestion, submitAnswer, updateHeartbeat, useFiftyFiftyLifeline } from '../../api/player';
-import { usePolling } from '../../hooks/usePolling';
+import { submitAnswer, updateHeartbeat, useFiftyFiftyLifeline, getStatus, getCurrentQuestion } from '../../api/player';
+import { useTriviaEvents } from '../../hooks/useTriviaEvents';
 import type { TriviaStatusDTO, CurrentQuestionDTO, SubmitAnswerDTO } from '../../types/player';
 
 type QuestionUIState = 'IDLE' | 'ACTIVE' | 'ANSWERED' | 'TIMEOUT' | 'WAITING_NEXT';
@@ -27,46 +27,88 @@ export default function PlayerGamePage() {
   const answerLockedRef = useRef(false);
   const uiStateRef = useRef<QuestionUIState>('IDLE');
 
-  // Poll status and navigate if needed
-  const { data: statusData } = usePolling<TriviaStatusDTO>(
-    async () => {
-      if (!triviaId) throw new Error('No trivia ID');
-      const response = await getStatus(triviaId);
-      if (response.error) throw new Error(response.error);
-      if (!response.data) throw new Error('No status data');
-      return response.data;
-    },
-    {
-      intervalMs: 1000,
-      enabled: !!triviaId,
-      onData: (data) => {
-        if (data.state === 'WAITING') {
-          navigate(`/play/trivias/${triviaId}/lobby`);
-        } else if (data.state === 'FINISHED') {
-          navigate(`/play/trivias/${triviaId}/results`);
-        }
-      },
-    }
-  );
+  // State for SSE data
+  const [statusData, setStatusData] = useState<TriviaStatusDTO | null>(null);
+  const [questionData, setQuestionData] = useState<CurrentQuestionDTO | null>(null);
+  const [loadingInitialState, setLoadingInitialState] = useState(true);
 
-  // Poll current question
-  const {
-    data: questionData,
-    error: questionError,
-    loading: questionLoading,
-  } = usePolling<CurrentQuestionDTO>(
-    async () => {
-      if (!triviaId || !user) throw new Error('No trivia ID or user');
-      const response = await getCurrentQuestion(triviaId, user.id);
-      if (response.error) throw new Error(response.error);
-      if (!response.data) throw new Error('No question data');
-      return response.data;
+  // Load initial state when component mounts
+  useEffect(() => {
+    const loadInitialState = async () => {
+      if (!triviaId || !user) {
+        setLoadingInitialState(false);
+        return;
+      }
+
+      try {
+        // Load initial status
+        const statusResponse = await getStatus(triviaId);
+        if (statusResponse.data) {
+          setStatusData(statusResponse.data);
+          
+          // If trivia is already IN_PROGRESS, load current question
+          if (statusResponse.data.state === 'IN_PROGRESS') {
+            const questionResponse = await getCurrentQuestion(triviaId, user.id);
+            if (questionResponse.data) {
+              setQuestionData(questionResponse.data);
+            }
+          }
+          
+          // Navigate if needed
+          if (statusResponse.data.state === 'WAITING') {
+            navigate(`/play/trivias/${triviaId}/lobby`);
+          } else if (statusResponse.data.state === 'FINISHED') {
+            navigate(`/play/trivias/${triviaId}/results`);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading initial state:', err);
+      } finally {
+        setLoadingInitialState(false);
+      }
+    };
+
+    loadInitialState();
+  }, [triviaId, user, navigate]);
+
+  // Use SSE events instead of polling
+  useTriviaEvents({
+    triviaId: triviaId || '',
+    userId: user?.id,
+    role: 'PLAYER',
+    enabled: !!triviaId && !!user,
+    onStatusUpdated: (data) => {
+      setStatusData(data);
+      // Navigate automatically when status changes
+      if (data.state === 'WAITING') {
+        navigate(`/play/trivias/${triviaId}/lobby`);
+      } else if (data.state === 'FINISHED') {
+        navigate(`/play/trivias/${triviaId}/results`);
+      }
     },
-    {
-      intervalMs: 2000,
-      enabled: !!triviaId && !!user && statusData?.state === 'IN_PROGRESS',
-    }
-  );
+    onCurrentQuestionUpdated: async (data) => {
+      // SSE event doesn't include fifty_fifty_available (it's player-specific)
+      // Fetch the current question individually to get the player's own availability
+      if (triviaId && user) {
+        try {
+          const questionResponse = await getCurrentQuestion(triviaId, user.id);
+          if (questionResponse.data) {
+            // Use the fetched data which includes the player's own fifty_fifty_available
+            setQuestionData(questionResponse.data);
+          } else {
+            // Fallback to SSE data if fetch fails
+            setQuestionData(data);
+          }
+        } catch (err) {
+          console.error('Error fetching current question after SSE event:', err);
+          // Fallback to SSE data
+          setQuestionData(data);
+        }
+      } else {
+        setQuestionData(data);
+      }
+    },
+  });
         
   // Reset state only when question_id changes
   useEffect(() => {
@@ -279,6 +321,17 @@ export default function PlayerGamePage() {
     navigate('/login');
   };
 
+  // Show loading while fetching initial state
+  if (loadingInitialState) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center' }}>
+        <h1>Loading game...</h1>
+        <p>Please wait...</p>
+      </div>
+    );
+  }
+
+  // If status is not IN_PROGRESS, show waiting message
   if (statusData?.state !== 'IN_PROGRESS') {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -307,17 +360,7 @@ export default function PlayerGamePage() {
         </button>
       </div>
 
-      {questionError !== undefined && (
-        <div style={{ padding: '0.75rem', backgroundColor: '#fff3cd', color: '#856404', borderRadius: '4px', marginBottom: '1rem' }}>
-          Error loading question: {questionError instanceof Error 
-            ? questionError.message 
-            : typeof questionError === 'string' 
-              ? questionError 
-              : 'Unknown error'}
-        </div>
-      )}
-
-      {questionLoading && !questionData ? (
+      {!questionData ? (
         <div style={{ textAlign: 'center', padding: '2rem' }}>Loading question...</div>
       ) : questionData ? (
         <div>
