@@ -50,7 +50,8 @@ cors_origins = settings.CORS_ORIGINS.split(",") if settings.CORS_ORIGINS else []
 # Strip whitespace from each origin
 cors_origins = [origin.strip() for origin in cors_origins if origin.strip()]
 
-allowed_origins = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+raw = os.getenv("CORS_ALLOWED_ORIGINS", "")
+allowed_origins = [o.strip() for o in raw.split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
