@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.core.config import settings
 from app.core.logging import setup_logging
 from app.infrastructure.api.routers import (
     admin,
@@ -41,12 +42,16 @@ app = FastAPI(
 )
 
 # Configure CORS
+# Read CORS_ORIGINS from environment variable (comma-separated list)
+# Default to localhost for development
+
+cors_origins = settings.CORS_ORIGINS.split(",") if settings.CORS_ORIGINS else []
+# Strip whitespace from each origin
+cors_origins = [origin.strip() for origin in cors_origins if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",  # Frontend dev server
-        "http://localhost:80",   # Frontend Docker (nginx on port 80)
-    ],
+    allow_origins=cors_origins if cors_origins else ["http://localhost:5173", "http://localhost:80"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
