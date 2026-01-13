@@ -255,3 +255,35 @@ From the `backend/` directory, you can use the tasks configured in `.vscode/task
 - **Alembic: Upgrade Head** - Apply migrations
 - **Alembic: Create Migration** - Create a new migration
 
+## AWS Deploy (Simple)
+
+### Backend - Elastic Beanstalk
+
+El backend se despliega en AWS Elastic Beanstalk usando la plataforma Docker.
+
+Para instrucciones detalladas, consulta: [`/backend/README_AWS_EB.md`](backend/README_AWS_EB.md)
+
+**Resumen rápido:**
+1. Crear aplicación y entorno en Elastic Beanstalk (plataforma Docker)
+2. Subir código desde `/backend` (ZIP o usando EB CLI)
+3. Configurar variables de entorno:
+   - `DATABASE_URL`: URL de conexión a RDS PostgreSQL
+   - `CORS_ORIGINS`: Orígenes permitidos separados por comas
+4. Health check: `/health`
+
+### Frontend - AWS Amplify
+
+El frontend se despliega en AWS Amplify.
+
+Para instrucciones detalladas, consulta: [`/frontend/README_AWS_AMPLIFY.md`](frontend/README_AWS_AMPLIFY.md)
+
+**Resumen rápido:**
+1. Conectar repositorio Git en Amplify
+2. Configurar variable de entorno:
+   - `VITE_API_URL`: URL del backend en Elastic Beanstalk
+3. Amplify detectará automáticamente `amplify.yml` en la raíz del repo
+
+### Nota Importante
+
+En producción, la base de datos debe ser **RDS PostgreSQL**, no un contenedor Docker. Configura `DATABASE_URL` en Elastic Beanstalk para apuntar a tu instancia RDS.
+
