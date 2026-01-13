@@ -1,4 +1,5 @@
 """FastAPI application entry point."""
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -49,9 +50,11 @@ cors_origins = settings.CORS_ORIGINS.split(",") if settings.CORS_ORIGINS else []
 # Strip whitespace from each origin
 cors_origins = [origin.strip() for origin in cors_origins if origin.strip()]
 
+allowed_origins = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins if cors_origins else ["http://localhost:5173", "http://localhost:80"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
